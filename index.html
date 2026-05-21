@@ -373,6 +373,7 @@ tr:hover td { background: var(--gray-50); }
   <div class="formador-content">
     <div class="alert-box alert-info" style="margin-bottom:20px">
       ℹ️ Crie aqui os contribuintes fictícios (empresas ou pessoas singulares) que os estagiários irão usar. Cada um terá o seu NIF simulado e palavra-passe de acesso.
+      <span id="storage-status" style="margin-left:10px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,.1)">A verificar armazenamento...</span>
     </div>
 
     <!-- NOVA EMPRESA -->
@@ -855,6 +856,69 @@ tr:hover td { background: var(--gray-50); }
       <div class="card-body-flush" id="lista-empresas">
         <div style="padding:30px;text-align:center;color:var(--gray-400)">Nenhuma empresa cadastrada ainda.</div>
       </div>
+    </div>
+
+    <!-- SUPABASE CONFIG -->
+    <div class="card">
+      <div class="card-head" onclick="toggleSBPanel()" style="cursor:pointer">
+        <h3>☁️ Base de Dados (Supabase)</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="sb-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--amber-lt);color:var(--amber)">Não configurado</span>
+          <span id="sb-toggle-icon" style="font-size:13px;color:var(--gray-400)">▼</span>
+        </div>
+      </div>
+      <div id="sb-panel" class="card-body">
+        <div class="alert-box alert-info" style="margin-bottom:14px">
+          ☁️ Com o Supabase os dados ficam guardados na nuvem e persistem em qualquer computador. Gratuito até 500MB. Siga o guia abaixo para configurar.
+        </div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Supabase URL</label>
+            <input id="sb-url" value="https://udnixuuqplxeahaqqklj.supabase.co" oninput="checkSupabaseConfig()">
+          </div>
+          <div class="fgroup">
+            <label>Anon / Public Key</label>
+            <input id="sb-key" value="sb_publishable_kahKEEuJOTlKUSdHTwvUmA_G1SBlLwo" oninput="checkSupabaseConfig()">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary" onclick="guardarSupabaseConfig()">💾 Guardar Configuração</button>
+          <button class="btn btn-secondary" onclick="testarSupabase()">🔌 Testar Ligação</button>
+        </div>
+        <div id="sb-msg" style="margin-top:10px"></div>
+        <div id="sb-guide">
+        <hr class="divider">
+        <p style="font-size:13px;font-weight:700;color:var(--gray-900);margin-bottom:10px">📋 Como configurar (5 minutos):</p>
+        <div style="font-size:13px;line-height:2;color:var(--gray-600)">
+          <p><strong>1.</strong> Acede a <a href="https://supabase.com" target="_blank" style="color:var(--blue)">supabase.com</a> e cria uma conta gratuita</p>
+          <p><strong>2.</strong> Clica em <strong>New Project</strong> → dá um nome (ex: <code style="background:var(--gray-100);padding:1px 5px;border-radius:3px">portal-simulador</code>) → escolhe uma senha forte → clica <strong>Create</strong></p>
+          <p><strong>3.</strong> Aguarda ~2 minutos até o projecto estar pronto</p>
+          <p><strong>4.</strong> No menu lateral vai a <strong>SQL Editor</strong> e executa este comando:</p>
+          <pre style="background:var(--gray-900);color:#a3e635;padding:14px;border-radius:8px;font-size:11px;overflow-x:auto;margin:8px 0">CREATE TABLE contribuintes (
+  id bigint generated always as identity primary key,
+  tipo text,
+  nome text not null,
+  nif text not null unique,
+  pass text not null,
+  cae text,
+  forma text,
+  grupo text,
+  municipio text,
+  divida numeric default 0,
+  creditos numeric default 0,
+  criado_em timestamptz default now()
+);
+
+-- Permitir acesso público (apenas leitura/escrita via anon key)
+ALTER TABLE contribuintes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "acesso_publico" ON contribuintes FOR ALL USING (true) WITH CHECK (true);</pre>
+          <p><strong>5.</strong> Vai a <strong>Settings → API</strong> e copia:</p>
+          <p style="padding-left:16px">• <strong>Project URL</strong> → cola no campo <em>Supabase URL</em> acima</p>
+          <p style="padding-left:16px">• <strong>anon / public</strong> key → cola no campo <em>Anon / Public Key</em> acima</p>
+          <p><strong>6.</strong> Clica <strong>Guardar Configuração</strong> e depois <strong>Testar Ligação</strong> ✅</p>
+        </div>
+        </div><!-- /sb-guide -->
+      </div><!-- /sb-panel -->
     </div>
 
     <!-- ALTERAR PIN -->
@@ -1453,14 +1517,112 @@ tr:hover td { background: var(--gray-50); }
 </div><!-- /screen-portal -->
 
 <script>
-// ── STORAGE HELPERS (in-memory) ──
+// ── SUPABASE CONFIG ──
+// Preenche com os teus dados do Supabase (Settings > API)
+function getSBUrl() { return window._SB_URL || (typeof localStorage !== 'undefined' && localStorage.getItem('sb_url')) || 'https://udnixuuqplxeahaqqklj.supabase.co'; }
+function getSBKey() { return window._SB_KEY || (typeof localStorage !== 'undefined' && localStorage.getItem('sb_key')) || 'sb_publishable_kahKEEuJOTlKUSdHTwvUmA_G1SBlLwo'; }
+function getUseSupabase() { return getSBUrl() !== '' && getSBKey() !== ''; }
+
+async function sbRequest(method, path, body) {
+  const SUPABASE_URL = getSBUrl();
+  const SUPABASE_KEY = getSBKey();
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method,
+    headers: {
+      'apikey': getSBKey(),
+      'Authorization': 'Bearer ' + getSBKey(),
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+// ── STORAGE HELPERS ──
+// Prioridade: Supabase > localStorage > memória
 let _empresas = [];
 let _pin = '1234';
+let _useStorage = false;
 
-function getEmpresas() { return _empresas; }
-function saveEmpresas(arr) { _empresas = arr; }
-function getPin() { return _pin; }
+try {
+  localStorage.setItem('_test', '1');
+  localStorage.removeItem('_test');
+  _useStorage = true;
+} catch(e) { _useStorage = false; }
 
+async function getEmpresas() {
+  if (getUseSupabase()) {
+    try {
+      const rows = await sbRequest('GET', 'contribuintes?select=*&order=nome.asc');
+      return rows || [];
+    } catch(e) { console.warn('Supabase erro:', e); }
+  }
+  if (_useStorage) {
+    try { return JSON.parse(localStorage.getItem('agt_sim_empresas') || '[]'); } catch(e) {}
+  }
+  return _empresas;
+}
+
+async function saveEmpresa(nova) {
+  if (getUseSupabase()) {
+    try {
+      await sbRequest('POST', 'contribuintes', nova);
+      return true;
+    } catch(e) { console.warn('Supabase erro:', e); }
+  }
+  const arr = await getEmpresas();
+  arr.push(nova);
+  _empresas = arr;
+  if (_useStorage) {
+    try { localStorage.setItem('agt_sim_empresas', JSON.stringify(arr)); } catch(e) {}
+  }
+  return true;
+}
+
+async function deleteEmpresa(nif) {
+  if (getUseSupabase()) {
+    try {
+      await sbRequest('DELETE', 'contribuintes?nif=eq.' + nif);
+      return true;
+    } catch(e) { console.warn('Supabase erro:', e); }
+  }
+  let arr = await getEmpresas();
+  arr = arr.filter(e => e.nif !== nif);
+  _empresas = arr;
+  if (_useStorage) {
+    try { localStorage.setItem('agt_sim_empresas', JSON.stringify(arr)); } catch(e) {}
+  }
+  return true;
+}
+
+async function deleteAllEmpresas() {
+  if (getUseSupabase()) {
+    try {
+      await sbRequest('DELETE', 'contribuintes?id=gte.0');
+    } catch(e) { console.warn('Supabase erro:', e); }
+  }
+  _empresas = [];
+  if (_useStorage) { try { localStorage.removeItem('agt_sim_empresas'); } catch(e) {} }
+}
+
+function getPin() {
+  if (_useStorage) return localStorage.getItem('agt_sim_pin') || _pin;
+  return _pin;
+}
+function savePin(n) {
+  _pin = n;
+  if (_useStorage) { try { localStorage.setItem('agt_sim_pin', n); } catch(e) {} }
+}
+
+// Retrocompat wrappers síncronos para código legado
+function saveEmpresas(arr) {
+  _empresas = arr;
+  if (_useStorage) {
+    try { localStorage.setItem('agt_sim_empresas', JSON.stringify(arr)); } catch(e) {}
+  }
+}
 // ── LOGIN ──
 let currentEmpresa = null;
 
@@ -1477,11 +1639,11 @@ function showError(msg) {
   el.textContent = msg; el.style.display = 'block';
 }
 
-function loginEstagiario() {
+async function loginEstagiario() {
   const nif = document.getElementById('login-nif').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
   if (!nif || !pass) { showError('Por favor preencha o NIF e a palavra-passe.'); return; }
-  const empresas = getEmpresas();
+  const empresas = await getEmpresas();
   const emp = empresas.find(e => e.nif === nif && e.pass === pass);
   if (!emp) { showError('NIF ou palavra-passe incorrectos. Contacte o formador.'); return; }
   currentEmpresa = emp;
@@ -1586,7 +1748,27 @@ function switchDTab(t) {
 function updateDecFields() {
   const v = document.getElementById('dec-tipo').value;
   ['iva','irt','ii','generico'].forEach(f => document.getElementById('fields-'+f).classList.add('hidden'));
-  if (v==='iva') { document.getElementById('fields-iva').classList.remove('hidden'); calcIVA(); }
+  if (v==='iva') { document.getElementById('fields-iva').classList.remove('hidden'); calcIVA();
+loadSupabaseConfig();
+
+// Mostrar estado do armazenamento no painel do formador
+(function() {
+  const el = document.getElementById('storage-status');
+  if (!el) return;
+  if (getUseSupabase()) {
+    el.textContent = '☁️ Supabase activo — dados na nuvem';
+    el.style.background = 'rgba(21,128,61,.15)';
+    el.style.color = '#14532d';
+  } else if (_useStorage) {
+    el.textContent = '💾 Dados guardados no browser (só neste computador)';
+    el.style.background = 'rgba(59,130,246,.15)';
+    el.style.color = '#1e3a8a';
+  } else {
+    el.textContent = '⚠ Dados só em memória (recarregar apaga tudo)';
+    el.style.background = 'rgba(180,83,9,.15)';
+    el.style.color = '#7c2d12';
+  }
+})(); }
   else if (v==='irt') document.getElementById('fields-irt').classList.remove('hidden');
   else if (v==='ii') { document.getElementById('fields-ii').classList.remove('hidden'); calcII(); }
   else if (v) { document.getElementById('fields-generico').classList.remove('hidden'); calcGen(); }
@@ -1719,7 +1901,7 @@ function setTipoContribuinte(tipo) {
   btnS.style.borderColor = !isC ? 'var(--orange)' : 'var(--gray-200)';
 }
 
-function cadastrarEmpresa() {
+async function cadastrarEmpresa() {
   const alerta = document.getElementById('formador-alert');
   const isC = _tipoContribuinte === 'colectiva';
 
@@ -1745,7 +1927,7 @@ function cadastrarEmpresa() {
     alerta.innerHTML = '<div class="alert-box alert-err">⚠ NIF/BI inválido. Formato esperado: 9 dígitos + 2 letras + 3 dígitos (ex: 006238886HO043). Use o botão ⚡ Gerar.</div>';
     return;
   }
-  const empresas = getEmpresas();
+  const empresas = await getEmpresas();
   if (empresas.find(e => e.nif === nif)) {
     alerta.innerHTML = '<div class="alert-box alert-err">⚠ Já existe um contribuinte com esse NIF.</div>';
     return;
@@ -1761,8 +1943,8 @@ function cadastrarEmpresa() {
     divida: parseFloat(document.getElementById('f-divida').value)||0,
     creditos: parseFloat(document.getElementById('f-creditos').value)||0
   };
-  empresas.push(nova);
-  saveEmpresas(empresas);
+  alerta.innerHTML = '<div class="alert-box alert-info">⏳ A guardar...</div>';
+  await saveEmpresa(nova);
   const icone = isC ? '🏢' : '👤';
   alerta.innerHTML = '<div class="alert-box alert-ok">' + icone + ' Contribuinte cadastrado! NIF: '+nif+' · Pass: '+pass+'</div>';
   ['f-nome','f-nif','f-pass','f-nome-s','f-nif-s','f-pass-s'].forEach(id => {
@@ -1770,11 +1952,11 @@ function cadastrarEmpresa() {
   });
   document.getElementById('f-divida').value=0;
   document.getElementById('f-creditos').value=0;
-  renderListaEmpresas();
+  await renderListaEmpresas();
 }
 
-function renderListaEmpresas() {
-  const empresas = getEmpresas();
+async function renderListaEmpresas() {
+  const empresas = await getEmpresas();
   const cont = document.getElementById('lista-empresas');
   document.getElementById('count-empresas').textContent = empresas.length;
   if (!empresas.length) {
@@ -1789,36 +1971,35 @@ function renderListaEmpresas() {
         <p style="margin-top:2px;font-size:11px;color:var(--gray-400)">${e.cae} · ${e.municipio} · Dívida: ${Number(e.divida).toLocaleString('pt-PT')} Kz</p>
       </div>
       <div class="empresa-card-actions">
-        <button class="btn btn-secondary btn-sm" onclick="testarLogin(${i})">🔑 Testar Acesso</button>
-        <button class="btn btn-danger btn-sm" onclick="removerEmpresa(${i})">🗑</button>
+        <button class="btn btn-secondary btn-sm" onclick="testarLogin('${e.nif}')">🔑 Testar Acesso</button>
+        <button class="btn btn-danger btn-sm" onclick="removerEmpresa('${e.nif}')">🗑</button>
       </div>
     </div>
   `).join('');
 }
 
-function removerEmpresa(i) {
-  if (!confirm('Remover esta empresa?')) return;
-  const arr = getEmpresas();
-  arr.splice(i,1);
-  saveEmpresas(arr);
-  renderListaEmpresas();
+async function removerEmpresa(nif) {
+  if (!confirm('Remover este contribuinte?')) return;
+  await deleteEmpresa(nif);
+  await renderListaEmpresas();
 }
 
-function limparEmpresas() {
-  if (!confirm('Apagar TODAS as empresas cadastradas?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  renderListaEmpresas();
+async function limparEmpresas() {
+  if (!confirm('Apagar TODOS os contribuintes cadastrados?')) return;
+  await deleteAllEmpresas();
+  await renderListaEmpresas();
 }
 
-function testarLogin(i) {
-  const e = getEmpresas()[i];
+async function testarLogin(nif) {
+  const arr = await getEmpresas();
+  const e = arr.find(x => x.nif === nif);
   if (!e) return;
   currentEmpresa = e;
   carregarPortal(e);
 }
 
-function exportarEmpresas() {
-  const arr = getEmpresas();
+async function exportarEmpresas() {
+  const arr = await getEmpresas();
   const rows = [['Denominação','NIF','Palavra-passe','CAE','Forma Jurídica','Grupo','Município','Dívida (Kz)','Créditos (Kz)']];
   arr.forEach(e => rows.push([e.nome,e.nif,e.pass,e.cae,e.forma,e.grupo,e.municipio,e.divida,e.creditos]));
   const csv = rows.map(r=>r.join(';')).join('\n');
@@ -1833,7 +2014,7 @@ function alterarPin() {
   const msg = document.getElementById('pin-msg');
   if (n.length!==4||!/^\d+$/.test(n)) { msg.innerHTML='<div class="alert-box alert-err" style="margin-top:8px">O PIN deve ter 4 dígitos numéricos.</div>'; return; }
   if (n!==c) { msg.innerHTML='<div class="alert-box alert-err" style="margin-top:8px">Os PINs não coincidem.</div>'; return; }
-  _pin = n;
+  savePin(n);
   msg.innerHTML='<div class="alert-box alert-ok" style="margin-top:8px">✅ PIN alterado com sucesso!</div>';
   document.getElementById('pin-novo').value='';
   document.getElementById('pin-conf').value='';
@@ -1879,6 +2060,121 @@ function updateNIFPrefix() {
   if (hint && code) {
     hint.textContent = 'Código provincial seleccionado: ' + code + ' — Clique ⚡ Gerar para criar o NIF.';
     hint.style.color = 'var(--blue)';
+  }
+}
+
+// ── SUPABASE UI HELPERS ──
+function loadSupabaseConfig() {
+  // Use hardcoded defaults if nothing in localStorage
+  const url = (_useStorage && localStorage.getItem('sb_url')) || getSBUrl();
+  const key = (_useStorage && localStorage.getItem('sb_key')) || getSBKey();
+  // Always persist so Testar Ligação can read them
+  if (_useStorage && url) localStorage.setItem('sb_url', url);
+  if (_useStorage && key) localStorage.setItem('sb_key', key);
+  window._SB_URL = url;
+  window._SB_KEY = key;
+  const elUrl = document.getElementById('sb-url');
+  const elKey = document.getElementById('sb-key');
+  if (elUrl) elUrl.value = url;
+  if (elKey) elKey.value = key;
+  checkSupabaseConfig();
+  // If already configured, collapse the panel
+  if (url && key) {
+    updateSBBadge(true);
+    setTimeout(() => collapseSBPanel(), 100);
+  }
+}
+
+function toggleSBPanel() {
+  const panel = document.getElementById('sb-panel');
+  const icon = document.getElementById('sb-toggle-icon');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+}
+
+function collapseSBPanel() {
+  const panel = document.getElementById('sb-panel');
+  const icon = document.getElementById('sb-toggle-icon');
+  if (panel) panel.style.display = 'none';
+  if (icon) icon.textContent = '▶';
+}
+
+function updateSBBadge(ok) {
+  const badge = document.getElementById('sb-badge');
+  if (!badge) return;
+  if (ok) {
+    badge.textContent = '☁️ Activo';
+    badge.style.background = 'var(--green-lt)';
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.textContent = 'Não configurado';
+    badge.style.background = 'var(--amber-lt)';
+    badge.style.color = 'var(--amber)';
+  }
+}
+
+function checkSupabaseConfig() {
+  const url = (document.getElementById('sb-url')||{}).value||'';
+  const key = (document.getElementById('sb-key')||{}).value||'';
+  const badge = document.getElementById('sb-badge');
+  if (!badge) return;
+  if (url && key) {
+    badge.textContent = 'Configurado ✓';
+    badge.style.background = 'var(--green-lt)';
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.textContent = 'Não configurado';
+    badge.style.background = 'var(--amber-lt)';
+    badge.style.color = 'var(--amber)';
+  }
+}
+
+function guardarSupabaseConfig() {
+  const url = document.getElementById('sb-url').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) {
+    document.getElementById('sb-msg').innerHTML = '<div class="alert-box alert-err">⚠ Preencha os dois campos.</div>';
+    return;
+  }
+  if (_useStorage) {
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+  }
+  // Update runtime constants
+  window._SB_URL = url;
+  window._SB_KEY = key;
+  if (_useStorage) {
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+  }
+  document.getElementById('sb-msg').innerHTML = '<div class="alert-box alert-ok">✅ Configuração guardada! Clique em Testar Ligação.</div>';
+  checkSupabaseConfig();
+}
+
+async function testarSupabase() {
+  const url = window._SB_URL || localStorage.getItem('sb_url') || '';
+  const key = window._SB_KEY || localStorage.getItem('sb_key') || '';
+  const msg = document.getElementById('sb-msg');
+  if (!url || !key) { msg.innerHTML = '<div class="alert-box alert-err">⚠ Configure o URL e a Key primeiro.</div>'; return; }
+  msg.innerHTML = '<div class="alert-box alert-info">⏳ A testar ligação...</div>';
+  try {
+    const res = await fetch(url + '/rest/v1/contribuintes?select=count', {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      msg.innerHTML = '<div class="alert-box alert-ok">✅ Ligação bem sucedida! Base de dados activa.</div>';
+      updateSBBadge(true);
+      // Auto-collapse after 2 seconds
+      setTimeout(() => collapseSBPanel(), 2000);
+    } else {
+      const err = await res.text();
+      msg.innerHTML = '<div class="alert-box alert-err">⚠ Erro: ' + err + '</div>';
+    }
+  } catch(e) {
+    msg.innerHTML = '<div class="alert-box alert-err">⚠ Erro de ligação: ' + e.message + '</div>';
   }
 }
 
