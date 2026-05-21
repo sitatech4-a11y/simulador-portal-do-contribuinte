@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Portal do Contribuinte — AGT Angola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue-dark: #002D80;
+  --blue:      #003DA6;
+  --blue-mid:  #0050CC;
+  --blue-lt:   #dbeafe;
+  --blue-pale: #eff6ff;
+  --orange:    #E85D04;
+  --orange-lt: #fff3e0;
+  --green:     #15803d;
+  --green-lt:  #dcfce7;
+  --red:       #dc2626;
+  --red-lt:    #fee2e2;
+  --amber:     #b45309;
+  --amber-lt:  #fef3c7;
+  --gray-50:   #f8fafc;
+  --gray-100:  #f1f5f9;
+  --gray-200:  #e2e8f0;
+  --gray-400:  #94a3b8;
+  --gray-600:  #475569;
+  --gray-800:  #1e293b;
+  --gray-900:  #0f172a;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--gray-100); color: var(--gray-800); font-size: 14px; line-height: 1.5; }
+button { font-family: var(--font); cursor: pointer; }
+input, select, textarea { font-family: var(--font); }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── LOGIN SCREEN ── */
+#screen-login {
+  min-height: 100vh;
+  background: var(--blue-dark);
+  display: flex; align-items: center; justify-content: center;
+}
+#screen-login.active { display: flex; }
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 420px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-logo .coat { font-size: 36px; margin-bottom: 8px; }
+.login-logo h1 { font-size: 17px; font-weight: 700; color: var(--blue-dark); line-height: 1.3; }
+.login-logo p { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+.sim-badge {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 1.5px;
+  margin-bottom: 20px;
+}
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 24px;
+  background: var(--gray-100);
+  padding: 4px;
+  border-radius: var(--radius);
+}
+.mode-tab {
+  padding: 9px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  background: transparent;
+  transition: .2s;
+}
+.mode-tab.active { background: #fff; color: var(--blue); font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.form-group input, .form-group select {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  font-size: 14px; color: var(--gray-800);
+  transition: border-color .2s;
+}
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue); }
+.btn-full {
+  width: 100%; padding: 12px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: var(--radius);
+  font-size: 14px; font-weight: 700;
+  transition: background .2s;
+  margin-top: 4px;
+}
+.btn-full:hover { background: var(--blue-mid); }
+.login-note { font-size: 12px; color: var(--gray-400); text-align: center; margin-top: 16px; }
+.login-note strong { color: var(--orange); }
+#login-error { background: var(--red-lt); color: var(--red); padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; display: none; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--blue-dark);
+  color: #fff;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  position: sticky; top: 0; z-index: 200;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { font-size: 15px; font-weight: 700; }
+.topbar-logo span { font-family: var(--mono); font-size: 11px; background: var(--orange); padding: 2px 7px; border-radius: 4px; margin-left: 6px; letter-spacing: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-company { text-align: right; }
+.topbar-company strong { display: block; font-size: 13px; }
+.topbar-company small { font-size: 11px; opacity: .7; }
+.btn-logout { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.btn-logout:hover { background: rgba(255,255,255,.2); }
+
+/* ── SUBBAR ── */
+.subbar {
+  background: var(--blue);
+  display: flex; overflow-x: auto; gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.subbar::-webkit-scrollbar { height: 3px; }
+.subbar::-webkit-scrollbar-track { background: var(--blue); }
+.subbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.3); }
+.nav-btn {
+  padding: 13px 16px;
+  background: transparent; border: none; color: rgba(255,255,255,.7);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  border-bottom: 3px solid transparent; cursor: pointer;
+  transition: .15s;
+}
+.nav-btn:hover { color: #fff; background: rgba(255,255,255,.07); }
+.nav-btn.active { color: #fff; border-bottom-color: var(--orange); font-weight: 700; }
+.nav-badge { background: var(--red); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 4px; }
+
+/* ── LAYOUT ── */
+.app-layout { display: flex; min-height: calc(100vh - 96px); }
+.sidebar {
+  width: 210px; flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid var(--gray-200);
+  padding: 12px 0;
+}
+.sidebar-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; padding: 8px 16px 4px; }
+.sidebar-btn {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 9px 16px;
+  background: none; border: none;
+  color: var(--gray-600); font-size: 13px; font-weight: 500;
+  text-align: left; cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: .15s;
+}
+.sidebar-btn:hover { background: var(--blue-pale); color: var(--blue); }
+.sidebar-btn.active { background: var(--blue-pale); color: var(--blue); border-left-color: var(--blue); font-weight: 700; }
+.sidebar-btn svg { width: 17px; height: 17px; flex-shrink: 0; opacity: .75; }
+.sidebar-count { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 24px; overflow-y: auto; }
+.sim-alert {
+  background: var(--orange-lt);
+  border: 1.5px solid var(--orange);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #7c2d12;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px;
+}
+.page-title { font-size: 20px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; }
+
+/* ── CARDS ── */
+.card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); margin-bottom: 16px; }
+.card-head { padding: 14px 18px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
+.card-head h3 { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.card-body { padding: 18px; }
+.card-body-flush { padding: 0; }
+
+/* ── STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 16px; }
+.stat label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 4px; }
+.stat .val { font-size: 22px; font-weight: 700; color: var(--gray-900); font-family: var(--mono); }
+.stat .sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.stat.red .val { color: var(--red); }
+.stat.green .val { color: var(--green); }
+.stat.amber .val { color: var(--amber); }
+
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--gray-50); padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--gray-200); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-800); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--gray-50); }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-ok { background: var(--green-lt); color: var(--green); }
+.badge-warn { background: var(--amber-lt); color: var(--amber); }
+.badge-err { background: var(--red-lt); color: var(--red); }
+.badge-info { background: var(--blue-lt); color: var(--blue); }
+.badge-sim { background: var(--orange-lt); color: var(--orange); }
+
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: .15s; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-mid); }
+.btn-secondary { background: var(--gray-100); color: var(--gray-800); border: 1px solid var(--gray-200); }
+.btn-secondary:hover { background: var(--gray-200); }
+.btn-success { background: #16a34a; color: #fff; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-orange:hover { background: #c2410c; }
+
+/* ── FORMS ── */
+.fgroup { margin-bottom: 14px; }
+.fgroup label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+.fgroup input, .fgroup select, .fgroup textarea {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid var(--gray-200); border-radius: 6px;
+  font-size: 13px; color: var(--gray-800); background: #fff;
+  transition: border-color .2s;
+}
+.fgroup input:focus, .fgroup select:focus, .fgroup textarea:focus { outline: none; border-color: var(--blue); }
+.fgroup input[readonly], .fgroup input:read-only { background: var(--gray-50); color: var(--gray-600); }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.frow3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── MISC ── */
+.divider { border: none; border-top: 1px solid var(--gray-100); margin: 16px 0; }
+.alert-box { padding: 12px 14px; border-radius: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 9px; margin-bottom: 14px; }
+.alert-ok { background: var(--green-lt); color: #14532d; border: 1px solid #bbf7d0; }
+.alert-err { background: var(--red-lt); color: #7f1d1d; border: 1px solid #fecaca; }
+.alert-info { background: var(--blue-lt); color: #1e3a8a; border: 1px solid #bfdbfe; }
+.hidden { display: none !important; }
+.tabs-row { display: flex; gap: 0; border-bottom: 2px solid var(--gray-200); margin-bottom: 20px; }
+.tab-btn { padding: 10px 18px; background: none; border: none; font-size: 13px; font-weight: 500; color: var(--gray-400); border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
+.success-block { text-align: center; padding: 36px 20px; }
+.success-block .ico { font-size: 52px; color: var(--green); display: block; margin-bottom: 12px; }
+.success-block h3 { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+.success-block p { font-size: 13px; color: var(--gray-400); margin-top: 6px; }
+.nif-box { background: var(--blue-pale); border: 2px dashed var(--blue); border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 16px; }
+.nif-box .num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--blue); letter-spacing: 4px; }
+.nif-box .status { font-size: 12px; color: var(--green); margin-top: 5px; font-weight: 600; }
+.quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 10px; margin-bottom: 22px; }
+.quick-btn { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 16px 10px; text-align: center; cursor: pointer; transition: .15s; }
+.quick-btn:hover { border-color: var(--blue); background: var(--blue-pale); }
+.quick-btn .qico { font-size: 24px; margin-bottom: 7px; }
+.quick-btn span { font-size: 12px; color: var(--gray-800); font-weight: 500; display: block; }
+.timeline { list-style: none; }
+.tl-item { display: flex; gap: 10px; padding-bottom: 14px; position: relative; }
+.tl-dot { width: 9px; height: 9px; background: var(--blue); border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.tl-line { position: absolute; left: 4px; top: 13px; bottom: 0; width: 1.5px; background: var(--gray-200); }
+.tl-item:last-child .tl-line { display: none; }
+.tl-text strong { display: block; font-size: 13px; color: var(--gray-800); }
+.tl-text small { font-size: 12px; color: var(--gray-400); }
+.total-bar { background: var(--blue-pale); border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin: 12px 0; }
+.total-bar span { font-size: 13px; color: var(--gray-600); }
+.total-bar strong { font-size: 20px; font-weight: 700; color: var(--blue); font-family: var(--mono); }
+
+/* ── CERTIDÃO ── */
+.cert-doc { background: #fff; border: 2px solid var(--blue); border-radius: 10px; padding: 28px; position: relative; overflow: hidden; }
+.cert-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-25deg); font-size: 72px; font-weight: 900; color: rgba(0,61,166,.05); white-space: nowrap; pointer-events: none; user-select: none; }
+.cert-header { text-align: center; margin-bottom: 20px; }
+.cert-header h2 { color: var(--blue); font-size: 15px; font-weight: 700; }
+.cert-body { font-size: 13px; line-height: 2; }
+.cert-footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: flex-end; font-size: 12px; color: var(--gray-400); }
+.qr-placeholder { width: 72px; height: 72px; border: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 9px; text-align: center; color: var(--gray-400); border-radius: 4px; }
+
+/* ── GUIA ── */
+.guia-doc { border: 1px solid var(--gray-200); border-radius: 8px; padding: 20px; font-size: 12px; background: #fff; }
+.guia-top { display: flex; justify-content: space-between; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 2px solid var(--blue); }
+.barcode { background: repeating-linear-gradient(90deg,#000 0,#000 2px,#fff 2px,#fff 5px); height: 38px; width: 180px; margin: 10px 0; }
+
+/* ── FORMADOR ── */
+#screen-formador { min-height: 100vh; background: var(--gray-100); }
+#screen-formador.active { display: block; }
+.formador-bar { background: var(--orange); color: #fff; padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.formador-bar h1 { font-size: 15px; font-weight: 700; }
+.formador-content { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+.empresa-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.empresa-card-info h4 { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.empresa-card-info p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+.empresa-card-actions { display: flex; gap: 6px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .app-layout { flex-direction: column; }
+  .sidebar { width: 100%; display: flex; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--gray-200); padding: 4px; }
+  .sidebar-btn { border-left: none; border-bottom: 2px solid transparent; padding: 7px 10px; font-size: 12px; }
+  .sidebar-btn.active { border-left: none; border-bottom-color: var(--blue); }
+  .frow, .frow3 { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .topbar-company { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: LOGIN
+══════════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="coat">🏛️</div>
+      <h1>Portal do Contribuinte<br>República de Angola</h1>
+      <p>Administração Geral Tributária · Ministério das Finanças</p>
+    </div>
+    <div style="text-align:center; margin-bottom:20px;">
+      <span class="sim-badge">⚠ SIMULADOR DE FORMAÇÃO</span>
+    </div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="lt-estagiario" onclick="setLoginMode('estagiario')">Estagiário</button>
+      <button class="mode-tab" id="lt-formador" onclick="setLoginMode('formador')">Formador</button>
+    </div>
+    <div id="login-error"></div>
+
+    <!-- ESTAGIÁRIO -->
+    <div id="form-estagiario">
+      <div class="fgroup"><label>NIF da Empresa</label><input id="login-nif" placeholder="ex: 5000123456" maxlength="10"></div>
+      <div class="fgroup"><label>Palavra-passe</label><input id="login-pass" type="password" placeholder="••••••"></div>
+      <button class="btn-full" onclick="loginEstagiario()">Entrar no Portal</button>
+      <p class="login-note">Use as credenciais fornecidas pelo formador</p>
+    </div>
+
+    <!-- FORMADOR -->
+    <div id="form-formador" class="hidden">
+      <div class="fgroup"><label>PIN do Formador</label><input id="formador-pin" type="password" placeholder="PIN de 4 dígitos" maxlength="4"></div>
+      <button class="btn-full" style="background:var(--orange)" onclick="loginFormador()">Aceder ao Painel do Formador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: FORMADOR
+══════════════════════════════════════════ -->
+<div id="screen-formador" class="screen">
+  <div class="formador-bar">
+    <h1>⚙️ Painel do Formador — Gestão de Empresas de Simulação</h1>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="exportarEmpresas()">💾 Exportar Dados</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="voltarLogin()">← Sair</button>
+    </div>
+  </div>
+  <div class="formador-content">
+    <div class="alert-box alert-info" style="margin-bottom:20px">
+      ℹ️ Crie aqui os contribuintes fictícios (empresas ou pessoas singulares) que os estagiários irão usar. Cada um terá o seu NIF simulado e palavra-passe de acesso.
+    </div>
+
+    <!-- NOVA EMPRESA -->
+    <div class="card">
+      <div class="card-head"><h3>➕ Cadastrar Novo Contribuinte de Simulação</h3></div>
+      <div class="card-body">
+
+        <div style="margin-bottom:18px">
+          <div style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tipo de Contribuinte</div>
+          <div style="display:flex;gap:8px">
+            <button id="tipo-btn-colectiva" onclick="setTipoContribuinte('colectiva')"
+              style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--blue);background:var(--blue);color:#fff;transition:.15s">
+              🏢 Pessoa Colectiva<br><span style="font-size:11px;font-weight:400">Empresa / Organização</span>
+            </button>
+            <button id="tipo-btn-singular" onclick="setTipoContribuinte('singular')"
+              style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--gray-200);background:#fff;color:var(--gray-600);transition:.15s">
+              👤 Pessoa Singular<br><span style="font-size:11px;font-weight:400">Indivíduo / Trabalhador</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CAMPOS PESSOA COLECTIVA -->
+        <div id="campos-colectiva">
+          <div class="frow">
+            <div class="fgroup"><label>Denominação Social</label><input id="f-nome" placeholder="ex: CONSTRUTORA DELTA, LDA"></div>
+            <div class="fgroup">
+              <label>NIF Fictício (10 dígitos) <span style="font-family:var(--mono);font-size:10px;color:var(--blue);font-weight:700">Colectivo: começa por 5</span></label>
+              <input id="f-nif" placeholder="ex: 5000001234" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fgroup"><label>Palavra-passe de Acesso</label><input id="f-pass" placeholder="ex: delta2025"></div>
+            <div class="fgroup"><label>Actividade (CAE)</label>
+              <select id="f-cae">
+                <option value="62010">62010 — Consultoria em TI</option>
+                <option value="41200">41200 — Construção Civil</option>
+                <option value="46900">46900 — Comércio por Grosso</option>
+                <option value="47190">47190 — Comércio a Retalho</option>
+                <option value="49320">49320 — Transportes Rodoviários</option>
+                <option value="64190">64190 — Serviços Financeiros</option>
+                <option value="86100">86100 — Actividades Hospitalares</option>
+                <option value="85200">85200 — Ensino Básico e Secundário</option>
+                <option value="56100">56100 — Restauração e Similares</option>
+                <option value="70100">70100 — Actividades das Sedes Sociais</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow3">
+            <div class="fgroup"><label>Forma Jurídica</label>
+              <select id="f-forma">
+                <option>Sociedade por Quotas (LDA)</option>
+                <option>Sociedade Anónima (SA)</option>
+                <option>Empresa Pública (EP)</option>
+                <option>Empresário em Nome Individual (ENI)</option>
+                <option>Organização Não Governamental (ONG)</option>
+              </select>
+            </div>
+            <div class="fgroup"><label>Grupo Tributário</label>
+              <select id="f-grupo">
+                <option>Grupo A — Grandes Contribuintes</option>
+                <option>Grupo B — Médios Contribuintes</option>
+                <option>Grupo C — Pequenos Contribuintes</option>
+              </select>
+            </div>
+            <div class="fgroup"><label>Município / Sede</label>
+              <select id="f-municipio">
+                <option value="Luanda — Belas">Luanda — Belas</option>
+                <option value="Luanda — Cacuaco">Luanda — Cacuaco</option>
+                <option value="Luanda — Cazenga">Luanda — Cazenga</option>
+                <option value="Luanda — Icolo e Bengo">Luanda — Icolo e Bengo</option>
+                <option value="Luanda — Kilamba Kiaxi">Luanda — Kilamba Kiaxi</option>
+                <option value="Luanda — Luanda">Luanda — Luanda</option>
+                <option value="Luanda — Maianga">Luanda — Maianga</option>
+                <option value="Luanda — Musseques">Luanda — Musseques</option>
+                <option value="Luanda — Quissama">Luanda — Quissama</option>
+                <option value="Luanda — Talatona">Luanda — Talatona</option>
+                <option value="Luanda — Viana">Luanda — Viana</option>
+                <option value="Bengo — Ambriz">Bengo — Ambriz</option>
+                <option value="Bengo — Bula Atumba">Bengo — Bula Atumba</option>
+                <option value="Bengo — Dande">Bengo — Dande</option>
+                <option value="Bengo — Dembos">Bengo — Dembos</option>
+                <option value="Bengo — Nambuangongo">Bengo — Nambuangongo</option>
+                <option value="Bengo — Pango Aluquém">Bengo — Pango Aluquém</option>
+                <option value="Benguela — Balombo">Benguela — Balombo</option>
+                <option value="Benguela — Baía Farta">Benguela — Baía Farta</option>
+                <option value="Benguela — Benguela">Benguela — Benguela</option>
+                <option value="Benguela — Bocoio">Benguela — Bocoio</option>
+                <option value="Benguela — Caimbambo">Benguela — Caimbambo</option>
+                <option value="Benguela — Chongorói">Benguela — Chongorói</option>
+                <option value="Benguela — Cubal">Benguela — Cubal</option>
+                <option value="Benguela — Ganda">Benguela — Ganda</option>
+                <option value="Benguela — Lobito">Benguela — Lobito</option>
+                <option value="Bié — Andulo">Bié — Andulo</option>
+                <option value="Bié — Camacupa">Bié — Camacupa</option>
+                <option value="Bié — Catabola">Bié — Catabola</option>
+                <option value="Bié — Chinguar">Bié — Chinguar</option>
+                <option value="Bié — Chitembo">Bié — Chitembo</option>
+                <option value="Bié — Cuito">Bié — Cuito</option>
+                <option value="Bié — Cunhinga">Bié — Cunhinga</option>
+                <option value="Bié — Nharea">Bié — Nharea</option>
+                <option value="Cabinda — Belize">Cabinda — Belize</option>
+                <option value="Cabinda — Buco-Zau">Cabinda — Buco-Zau</option>
+                <option value="Cabinda — Cabinda">Cabinda — Cabinda</option>
+                <option value="Cabinda — Cacongo">Cabinda — Cacongo</option>
+                <option value="Cuando Cubango — Calai">Cuando Cubango — Calai</option>
+                <option value="Cuando Cubango — Cuangar">Cuando Cubango — Cuangar</option>
+                <option value="Cuando Cubango — Cuchi">Cuando Cubango — Cuchi</option>
+                <option value="Cuando Cubango — Cuito Cuanavale">Cuando Cubango — Cuito Cuanavale</option>
+                <option value="Cuando Cubango — Dirico">Cuando Cubango — Dirico</option>
+                <option value="Cuando Cubango — Longa">Cuando Cubango — Longa</option>
+                <option value="Cuando Cubango — Mavinga">Cuando Cubango — Mavinga</option>
+                <option value="Cuando Cubango — Menongue">Cuando Cubango — Menongue</option>
+                <option value="Cuando Cubango — Nancova">Cuando Cubango — Nancova</option>
+                <option value="Cuanza Norte — Ambaca">Cuanza Norte — Ambaca</option>
+                <option value="Cuanza Norte — Banga">Cuanza Norte — Banga</option>
+                <option value="Cuanza Norte — Bolongongo">Cuanza Norte — Bolongongo</option>
+                <option value="Cuanza Norte — Cambambe">Cuanza Norte — Cambambe</option>
+                <option value="Cuanza Norte — Golungo Alto">Cuanza Norte — Golungo Alto</option>
+                <option value="Cuanza Norte — Lucala">Cuanza Norte — Lucala</option>
+                <option value="Cuanza Norte — N'dalatando">Cuanza Norte — N'dalatando</option>
+                <option value="Cuanza Norte — Ngonguembo">Cuanza Norte — Ngonguembo</option>
+                <option value="Cuanza Norte — Samba Caju">Cuanza Norte — Samba Caju</option>
+                <option value="Cuanza Sul — Amboim">Cuanza Sul — Amboim</option>
+                <option value="Cuanza Sul — Cassongue">Cuanza Sul — Cassongue</option>
+                <option value="Cuanza Sul — Cela">Cuanza Sul — Cela</option>
+                <option value="Cuanza Sul — Conda">Cuanza Sul — Conda</option>
+                <option value="Cuanza Sul — Ebo">Cuanza Sul — Ebo</option>
+                <option value="Cuanza Sul — Kibala">Cuanza Sul — Kibala</option>
+                <option value="Cuanza Sul — Libolo">Cuanza Sul — Libolo</option>
+                <option value="Cuanza Sul — Mussende">Cuanza Sul — Mussende</option>
+                <option value="Cuanza Sul — Porto Amboim">Cuanza Sul — Porto Amboim</option>
+                <option value="Cuanza Sul — Quibala">Cuanza Sul — Quibala</option>
+                <option value="Cuanza Sul — Quilenda">Cuanza Sul — Quilenda</option>
+                <option value="Cuanza Sul — Seles">Cuanza Sul — Seles</option>
+                <option value="Cuanza Sul — Sumbe">Cuanza Sul — Sumbe</option>
+                <option value="Cunene — Cahama">Cunene — Cahama</option>
+                <option value="Cunene — Curoca">Cunene — Curoca</option>
+                <option value="Cunene — Cuvelai">Cunene — Cuvelai</option>
+                <option value="Cunene — Namacunde">Cunene — Namacunde</option>
+                <option value="Cunene — Ombadja">Cunene — Ombadja</option>
+                <option value="Cunene — Ondjiva">Cunene — Ondjiva</option>
+                <option value="Huambo — Bailundo">Huambo — Bailundo</option>
+                <option value="Huambo — Caála">Huambo — Caála</option>
+                <option value="Huambo — Catchiungo">Huambo — Catchiungo</option>
+                <option value="Huambo — Chicala-Cholohanga">Huambo — Chicala-Cholohanga</option>
+                <option value="Huambo — Chinjenje">Huambo — Chinjenje</option>
+                <option value="Huambo — Ecunha">Huambo — Ecunha</option>
+                <option value="Huambo — Huambo">Huambo — Huambo</option>
+                <option value="Huambo — Londuimbali">Huambo — Londuimbali</option>
+                <option value="Huambo — Longonjo">Huambo — Longonjo</option>
+                <option value="Huambo — Mungo">Huambo — Mungo</option>
+                <option value="Huambo — Ucuma">Huambo — Ucuma</option>
+                <option value="Huíla — Caconda">Huíla — Caconda</option>
+                <option value="Huíla — Caluquembe">Huíla — Caluquembe</option>
+                <option value="Huíla — Chibia">Huíla — Chibia</option>
+                <option value="Huíla — Chicomba">Huíla — Chicomba</option>
+                <option value="Huíla — Chipindo">Huíla — Chipindo</option>
+                <option value="Huíla — Cuvango">Huíla — Cuvango</option>
+                <option value="Huíla — Gambos">Huíla — Gambos</option>
+                <option value="Huíla — Humpata">Huíla — Humpata</option>
+                <option value="Huíla — Jamba">Huíla — Jamba</option>
+                <option value="Huíla — Kuvango">Huíla — Kuvango</option>
+                <option value="Huíla — Lubango">Huíla — Lubango</option>
+                <option value="Huíla — Matala">Huíla — Matala</option>
+                <option value="Huíla — Quilengues">Huíla — Quilengues</option>
+                <option value="Huíla — Quipungo">Huíla — Quipungo</option>
+                <option value="Lunda Norte — Cambulo">Lunda Norte — Cambulo</option>
+                <option value="Lunda Norte — Capenda-Camulemba">Lunda Norte — Capenda-Camulemba</option>
+                <option value="Lunda Norte — Caungula">Lunda Norte — Caungula</option>
+                <option value="Lunda Norte — Chitato">Lunda Norte — Chitato</option>
+                <option value="Lunda Norte — Cuango">Lunda Norte — Cuango</option>
+                <option value="Lunda Norte — Cuílo">Lunda Norte — Cuílo</option>
+                <option value="Lunda Norte — Dundo">Lunda Norte — Dundo</option>
+                <option value="Lunda Norte — Lóvua">Lunda Norte — Lóvua</option>
+                <option value="Lunda Norte — Lucapa">Lunda Norte — Lucapa</option>
+                <option value="Lunda Norte — Lubalo">Lunda Norte — Lubalo</option>
+                <option value="Lunda Sul — Cacolo">Lunda Sul — Cacolo</option>
+                <option value="Lunda Sul — Dala">Lunda Sul — Dala</option>
+                <option value="Lunda Sul — Haute Kassange">Lunda Sul — Haute Kassange</option>
+                <option value="Lunda Sul — Lungue-Bungo">Lunda Sul — Lungue-Bungo</option>
+                <option value="Lunda Sul — Muconda">Lunda Sul — Muconda</option>
+                <option value="Lunda Sul — Mwanza">Lunda Sul — Mwanza</option>
+                <option value="Lunda Sul — Saurimo">Lunda Sul — Saurimo</option>
+                <option value="Lunda Sul — Sombo">Lunda Sul — Sombo</option>
+                <option value="Malanje — Cacuso">Malanje — Cacuso</option>
+                <option value="Malanje — Cangandala">Malanje — Cangandala</option>
+                <option value="Malanje — Caombo">Malanje — Caombo</option>
+                <option value="Malanje — Cuaba Nzoji">Malanje — Cuaba Nzoji</option>
+                <option value="Malanje — Kiwaba N'zoji">Malanje — Kiwaba N'zoji</option>
+                <option value="Malanje — Luquembo">Malanje — Luquembo</option>
+                <option value="Malanje — Malanje">Malanje — Malanje</option>
+                <option value="Malanje — Marimba">Malanje — Marimba</option>
+                <option value="Malanje — Massango">Malanje — Massango</option>
+                <option value="Malanje — Mucari">Malanje — Mucari</option>
+                <option value="Malanje — Quela">Malanje — Quela</option>
+                <option value="Malanje — Quirima">Malanje — Quirima</option>
+                <option value="Moxico — Alto Zambeze">Moxico — Alto Zambeze</option>
+                <option value="Moxico — Bundas">Moxico — Bundas</option>
+                <option value="Moxico — Cameia">Moxico — Cameia</option>
+                <option value="Moxico — Camanongue">Moxico — Camanongue</option>
+                <option value="Moxico — Léua">Moxico — Léua</option>
+                <option value="Moxico — Luacano">Moxico — Luacano</option>
+                <option value="Moxico — Luau">Moxico — Luau</option>
+                <option value="Moxico — Luchazes">Moxico — Luchazes</option>
+                <option value="Moxico — Lumeje">Moxico — Lumeje</option>
+                <option value="Moxico — Luena">Moxico — Luena</option>
+                <option value="Namibe — Bibala">Namibe — Bibala</option>
+                <option value="Namibe — Camucuio">Namibe — Camucuio</option>
+                <option value="Namibe — Moçâmedes">Namibe — Moçâmedes</option>
+                <option value="Namibe — Tômbua">Namibe — Tômbua</option>
+                <option value="Namibe — Virei">Namibe — Virei</option>
+                <option value="Uíge — Aldeia Viçosa">Uíge — Aldeia Viçosa</option>
+                <option value="Uíge — Alto Cauale">Uíge — Alto Cauale</option>
+                <option value="Uíge — Ambuíla">Uíge — Ambuíla</option>
+                <option value="Uíge — Bembe">Uíge — Bembe</option>
+                <option value="Uíge — Buengas">Uíge — Buengas</option>
+                <option value="Uíge — Bungo">Uíge — Bungo</option>
+                <option value="Uíge — Cangola">Uíge — Cangola</option>
+                <option value="Uíge — Damba">Uíge — Damba</option>
+                <option value="Uíge — Milunga">Uíge — Milunga</option>
+                <option value="Uíge — Mucaba">Uíge — Mucaba</option>
+                <option value="Uíge — Negage">Uíge — Negage</option>
+                <option value="Uíge — Puri">Uíge — Puri</option>
+                <option value="Uíge — Quimbele">Uíge — Quimbele</option>
+                <option value="Uíge — Quitexe">Uíge — Quitexe</option>
+                <option value="Uíge — Sanza Pombo">Uíge — Sanza Pombo</option>
+                <option value="Uíge — Songo">Uíge — Songo</option>
+                <option value="Uíge — Uíge">Uíge — Uíge</option>
+                <option value="Uíge — Zombo">Uíge — Zombo</option>
+                <option value="Zaire — Cuimba">Zaire — Cuimba</option>
+                <option value="Zaire — M'banza Kongo">Zaire — M'banza Kongo</option>
+                <option value="Zaire — Nóqui">Zaire — Nóqui</option>
+                <option value="Zaire — Nzeto">Zaire — Nzeto</option>
+                <option value="Zaire — São Salvador do Congo">Zaire — São Salvador do Congo</option>
+                <option value="Zaire — Soyo">Zaire — Soyo</option>
+                <option value="Zaire — Tomboco">Zaire — Tomboco</option>
+                </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS PESSOA SINGULAR -->
+        <div id="campos-singular" class="hidden">
+          <div class="frow">
+            <div class="fgroup"><label>Nome Completo</label><input id="f-nome-s" placeholder="ex: JOSÉ MANUEL FERREIRA"></div>
+            <div class="fgroup">
+              <label>NIF / Nº BI Fictício <span style="font-family:var(--mono);font-size:10px;color:var(--orange);font-weight:700">Formato: 9 dígitos + 2 letras + 3 dígitos</span></label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input id="f-nif-s" placeholder="ex: 006238886HO043" maxlength="14" style="flex:1;padding:9px 11px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:var(--mono);letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+                <button type="button" onclick="gerarNIFSingular()" style="padding:9px 12px;background:var(--orange);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Gerar</button>
+              </div>
+              <div id="nif-s-hint" style="font-size:11px;color:var(--gray-400);margin-top:4px">Seleccione o município para gerar automaticamente com o código correcto.</div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fgroup"><label>Palavra-passe de Acesso</label><input id="f-pass-s" placeholder="ex: jose2025"></div>
+            <div class="fgroup"><label>Profissão / Actividade</label>
+              <select id="f-profissao">
+                <option>Trabalhador por Conta de Outrem</option>
+                <option>Trabalhador Independente (Prestador de Serviços)</option>
+                <option>Profissional Liberal (Advogado, Médico, etc.)</option>
+                <option>Agricultor / Pescador</option>
+                <option>Comerciante Individual</option>
+                <option>Pensionista / Reformado</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow3">
+            <div class="fgroup"><label>Estado Civil</label>
+              <select id="f-estado-civil">
+                <option>Solteiro(a)</option>
+                <option>Casado(a)</option>
+                <option>Divorciado(a)</option>
+                <option>Viúvo(a)</option>
+                <option>União de Facto</option>
+              </select>
+            </div>
+            <div class="fgroup"><label>Nº de Dependentes</label>
+              <select id="f-dependentes">
+                <option value="0">0 dependentes</option>
+                <option value="1">1 dependente</option>
+                <option value="2">2 dependentes</option>
+                <option value="3">3 dependentes</option>
+                <option value="4">4 ou mais</option>
+              </select>
+            </div>
+            <div class="fgroup"><label>Município de Residência</label>
+              <select id="f-municipio-s" onchange="updateNIFPrefix()">
+                <option value="Luanda — Belas" data-code="LA">Luanda — Belas  [LA]</option>
+                <option value="Luanda — Cacuaco" data-code="LA">Luanda — Cacuaco  [LA]</option>
+                <option value="Luanda — Cazenga" data-code="LA">Luanda — Cazenga  [LA]</option>
+                <option value="Luanda — Icolo e Bengo" data-code="LA">Luanda — Icolo e Bengo  [LA]</option>
+                <option value="Luanda — Kilamba Kiaxi" data-code="LA">Luanda — Kilamba Kiaxi  [LA]</option>
+                <option value="Luanda — Luanda" data-code="LA">Luanda — Luanda  [LA]</option>
+                <option value="Luanda — Maianga" data-code="LA">Luanda — Maianga  [LA]</option>
+                <option value="Luanda — Musseques" data-code="LA">Luanda — Musseques  [LA]</option>
+                <option value="Luanda — Quissama" data-code="LA">Luanda — Quissama  [LA]</option>
+                <option value="Luanda — Talatona" data-code="LA">Luanda — Talatona  [LA]</option>
+                <option value="Luanda — Viana" data-code="LA">Luanda — Viana  [LA]</option>
+                <option value="Bengo — Ambriz" data-code="BE">Bengo — Ambriz  [BE]</option>
+                <option value="Bengo — Bula Atumba" data-code="BE">Bengo — Bula Atumba  [BE]</option>
+                <option value="Bengo — Dande" data-code="BE">Bengo — Dande  [BE]</option>
+                <option value="Bengo — Dembos" data-code="BE">Bengo — Dembos  [BE]</option>
+                <option value="Bengo — Nambuangongo" data-code="BE">Bengo — Nambuangongo  [BE]</option>
+                <option value="Bengo — Pango Aluquém" data-code="BE">Bengo — Pango Aluquém  [BE]</option>
+                <option value="Benguela — Balombo" data-code="BG">Benguela — Balombo  [BG]</option>
+                <option value="Benguela — Baía Farta" data-code="BG">Benguela — Baía Farta  [BG]</option>
+                <option value="Benguela — Benguela" data-code="BG">Benguela — Benguela  [BG]</option>
+                <option value="Benguela — Bocoio" data-code="BG">Benguela — Bocoio  [BG]</option>
+                <option value="Benguela — Caimbambo" data-code="BG">Benguela — Caimbambo  [BG]</option>
+                <option value="Benguela — Chongorói" data-code="BG">Benguela — Chongorói  [BG]</option>
+                <option value="Benguela — Cubal" data-code="BG">Benguela — Cubal  [BG]</option>
+                <option value="Benguela — Ganda" data-code="BG">Benguela — Ganda  [BG]</option>
+                <option value="Benguela — Lobito" data-code="BG">Benguela — Lobito  [BG]</option>
+                <option value="Bié — Andulo" data-code="BI">Bié — Andulo  [BI]</option>
+                <option value="Bié — Camacupa" data-code="BI">Bié — Camacupa  [BI]</option>
+                <option value="Bié — Catabola" data-code="BI">Bié — Catabola  [BI]</option>
+                <option value="Bié — Chinguar" data-code="BI">Bié — Chinguar  [BI]</option>
+                <option value="Bié — Chitembo" data-code="BI">Bié — Chitembo  [BI]</option>
+                <option value="Bié — Cuito" data-code="BI">Bié — Cuito  [BI]</option>
+                <option value="Bié — Cunhinga" data-code="BI">Bié — Cunhinga  [BI]</option>
+                <option value="Bié — Nharea" data-code="BI">Bié — Nharea  [BI]</option>
+                <option value="Cabinda — Belize" data-code="CA">Cabinda — Belize  [CA]</option>
+                <option value="Cabinda — Buco-Zau" data-code="CA">Cabinda — Buco-Zau  [CA]</option>
+                <option value="Cabinda — Cabinda" data-code="CA">Cabinda — Cabinda  [CA]</option>
+                <option value="Cabinda — Cacongo" data-code="CA">Cabinda — Cacongo  [CA]</option>
+                <option value="Cuando Cubango — Calai" data-code="CC">Cuando Cubango — Calai  [CC]</option>
+                <option value="Cuando Cubango — Cuangar" data-code="CC">Cuando Cubango — Cuangar  [CC]</option>
+                <option value="Cuando Cubango — Cuchi" data-code="CC">Cuando Cubango — Cuchi  [CC]</option>
+                <option value="Cuando Cubango — Cuito Cuanavale" data-code="CC">Cuando Cubango — Cuito Cuanavale  [CC]</option>
+                <option value="Cuando Cubango — Dirico" data-code="CC">Cuando Cubango — Dirico  [CC]</option>
+                <option value="Cuando Cubango — Longa" data-code="CC">Cuando Cubango — Longa  [CC]</option>
+                <option value="Cuando Cubango — Mavinga" data-code="CC">Cuando Cubango — Mavinga  [CC]</option>
+                <option value="Cuando Cubango — Menongue" data-code="CC">Cuando Cubango — Menongue  [CC]</option>
+                <option value="Cuando Cubango — Nancova" data-code="CC">Cuando Cubango — Nancova  [CC]</option>
+                <option value="Cuanza Norte — Ambaca" data-code="CN">Cuanza Norte — Ambaca  [CN]</option>
+                <option value="Cuanza Norte — Banga" data-code="CN">Cuanza Norte — Banga  [CN]</option>
+                <option value="Cuanza Norte — Bolongongo" data-code="CN">Cuanza Norte — Bolongongo  [CN]</option>
+                <option value="Cuanza Norte — Cambambe" data-code="CN">Cuanza Norte — Cambambe  [CN]</option>
+                <option value="Cuanza Norte — Golungo Alto" data-code="CN">Cuanza Norte — Golungo Alto  [CN]</option>
+                <option value="Cuanza Norte — Lucala" data-code="CN">Cuanza Norte — Lucala  [CN]</option>
+                <option value="Cuanza Norte — N'dalatando" data-code="CN">Cuanza Norte — N'dalatando  [CN]</option>
+                <option value="Cuanza Norte — Ngonguembo" data-code="CN">Cuanza Norte — Ngonguembo  [CN]</option>
+                <option value="Cuanza Norte — Samba Caju" data-code="CN">Cuanza Norte — Samba Caju  [CN]</option>
+                <option value="Cuanza Sul — Amboim" data-code="CS">Cuanza Sul — Amboim  [CS]</option>
+                <option value="Cuanza Sul — Cassongue" data-code="CS">Cuanza Sul — Cassongue  [CS]</option>
+                <option value="Cuanza Sul — Cela" data-code="CS">Cuanza Sul — Cela  [CS]</option>
+                <option value="Cuanza Sul — Conda" data-code="CS">Cuanza Sul — Conda  [CS]</option>
+                <option value="Cuanza Sul — Ebo" data-code="CS">Cuanza Sul — Ebo  [CS]</option>
+                <option value="Cuanza Sul — Kibala" data-code="CS">Cuanza Sul — Kibala  [CS]</option>
+                <option value="Cuanza Sul — Libolo" data-code="CS">Cuanza Sul — Libolo  [CS]</option>
+                <option value="Cuanza Sul — Mussende" data-code="CS">Cuanza Sul — Mussende  [CS]</option>
+                <option value="Cuanza Sul — Porto Amboim" data-code="CS">Cuanza Sul — Porto Amboim  [CS]</option>
+                <option value="Cuanza Sul — Quibala" data-code="CS">Cuanza Sul — Quibala  [CS]</option>
+                <option value="Cuanza Sul — Quilenda" data-code="CS">Cuanza Sul — Quilenda  [CS]</option>
+                <option value="Cuanza Sul — Seles" data-code="CS">Cuanza Sul — Seles  [CS]</option>
+                <option value="Cuanza Sul — Sumbe" data-code="CS">Cuanza Sul — Sumbe  [CS]</option>
+                <option value="Cunene — Cahama" data-code="CU">Cunene — Cahama  [CU]</option>
+                <option value="Cunene — Curoca" data-code="CU">Cunene — Curoca  [CU]</option>
+                <option value="Cunene — Cuvelai" data-code="CU">Cunene — Cuvelai  [CU]</option>
+                <option value="Cunene — Namacunde" data-code="CU">Cunene — Namacunde  [CU]</option>
+                <option value="Cunene — Ombadja" data-code="CU">Cunene — Ombadja  [CU]</option>
+                <option value="Cunene — Ondjiva" data-code="CU">Cunene — Ondjiva  [CU]</option>
+                <option value="Huambo — Bailundo" data-code="HO">Huambo — Bailundo  [HO]</option>
+                <option value="Huambo — Caála" data-code="HO">Huambo — Caála  [HO]</option>
+                <option value="Huambo — Catchiungo" data-code="HO">Huambo — Catchiungo  [HO]</option>
+                <option value="Huambo — Chicala-Cholohanga" data-code="HO">Huambo — Chicala-Cholohanga  [HO]</option>
+                <option value="Huambo — Chinjenje" data-code="HO">Huambo — Chinjenje  [HO]</option>
+                <option value="Huambo — Ecunha" data-code="HO">Huambo — Ecunha  [HO]</option>
+                <option value="Huambo — Huambo" data-code="HO">Huambo — Huambo  [HO]</option>
+                <option value="Huambo — Londuimbali" data-code="HO">Huambo — Londuimbali  [HO]</option>
+                <option value="Huambo — Longonjo" data-code="HO">Huambo — Longonjo  [HO]</option>
+                <option value="Huambo — Mungo" data-code="HO">Huambo — Mungo  [HO]</option>
+                <option value="Huambo — Ucuma" data-code="HO">Huambo — Ucuma  [HO]</option>
+                <option value="Huíla — Caconda" data-code="HA">Huíla — Caconda  [HA]</option>
+                <option value="Huíla — Caluquembe" data-code="HA">Huíla — Caluquembe  [HA]</option>
+                <option value="Huíla — Chibia" data-code="HA">Huíla — Chibia  [HA]</option>
+                <option value="Huíla — Chicomba" data-code="HA">Huíla — Chicomba  [HA]</option>
+                <option value="Huíla — Chipindo" data-code="HA">Huíla — Chipindo  [HA]</option>
+                <option value="Huíla — Cuvango" data-code="HA">Huíla — Cuvango  [HA]</option>
+                <option value="Huíla — Gambos" data-code="HA">Huíla — Gambos  [HA]</option>
+                <option value="Huíla — Humpata" data-code="HA">Huíla — Humpata  [HA]</option>
+                <option value="Huíla — Jamba" data-code="HA">Huíla — Jamba  [HA]</option>
+                <option value="Huíla — Kuvango" data-code="HA">Huíla — Kuvango  [HA]</option>
+                <option value="Huíla — Lubango" data-code="HA">Huíla — Lubango  [HA]</option>
+                <option value="Huíla — Matala" data-code="HA">Huíla — Matala  [HA]</option>
+                <option value="Huíla — Quilengues" data-code="HA">Huíla — Quilengues  [HA]</option>
+                <option value="Huíla — Quipungo" data-code="HA">Huíla — Quipungo  [HA]</option>
+                <option value="Lunda Norte — Cambulo" data-code="LN">Lunda Norte — Cambulo  [LN]</option>
+                <option value="Lunda Norte — Capenda-Camulemba" data-code="LN">Lunda Norte — Capenda-Camulemba  [LN]</option>
+                <option value="Lunda Norte — Caungula" data-code="LN">Lunda Norte — Caungula  [LN]</option>
+                <option value="Lunda Norte — Chitato" data-code="LN">Lunda Norte — Chitato  [LN]</option>
+                <option value="Lunda Norte — Cuango" data-code="LN">Lunda Norte — Cuango  [LN]</option>
+                <option value="Lunda Norte — Cuílo" data-code="LN">Lunda Norte — Cuílo  [LN]</option>
+                <option value="Lunda Norte — Dundo" data-code="LN">Lunda Norte — Dundo  [LN]</option>
+                <option value="Lunda Norte — Lóvua" data-code="LN">Lunda Norte — Lóvua  [LN]</option>
+                <option value="Lunda Norte — Lucapa" data-code="LN">Lunda Norte — Lucapa  [LN]</option>
+                <option value="Lunda Norte — Lubalo" data-code="LN">Lunda Norte — Lubalo  [LN]</option>
+                <option value="Lunda Sul — Cacolo" data-code="LS">Lunda Sul — Cacolo  [LS]</option>
+                <option value="Lunda Sul — Dala" data-code="LS">Lunda Sul — Dala  [LS]</option>
+                <option value="Lunda Sul — Haute Kassange" data-code="LS">Lunda Sul — Haute Kassange  [LS]</option>
+                <option value="Lunda Sul — Lungue-Bungo" data-code="LS">Lunda Sul — Lungue-Bungo  [LS]</option>
+                <option value="Lunda Sul — Muconda" data-code="LS">Lunda Sul — Muconda  [LS]</option>
+                <option value="Lunda Sul — Mwanza" data-code="LS">Lunda Sul — Mwanza  [LS]</option>
+                <option value="Lunda Sul — Saurimo" data-code="LS">Lunda Sul — Saurimo  [LS]</option>
+                <option value="Lunda Sul — Sombo" data-code="LS">Lunda Sul — Sombo  [LS]</option>
+                <option value="Malanje — Cacuso" data-code="MA">Malanje — Cacuso  [MA]</option>
+                <option value="Malanje — Cangandala" data-code="MA">Malanje — Cangandala  [MA]</option>
+                <option value="Malanje — Caombo" data-code="MA">Malanje — Caombo  [MA]</option>
+                <option value="Malanje — Cuaba Nzoji" data-code="MA">Malanje — Cuaba Nzoji  [MA]</option>
+                <option value="Malanje — Kiwaba N'zoji" data-code="MA">Malanje — Kiwaba N'zoji  [MA]</option>
+                <option value="Malanje — Luquembo" data-code="MA">Malanje — Luquembo  [MA]</option>
+                <option value="Malanje — Malanje" data-code="MA">Malanje — Malanje  [MA]</option>
+                <option value="Malanje — Marimba" data-code="MA">Malanje — Marimba  [MA]</option>
+                <option value="Malanje — Massango" data-code="MA">Malanje — Massango  [MA]</option>
+                <option value="Malanje — Mucari" data-code="MA">Malanje — Mucari  [MA]</option>
+                <option value="Malanje — Quela" data-code="MA">Malanje — Quela  [MA]</option>
+                <option value="Malanje — Quirima" data-code="MA">Malanje — Quirima  [MA]</option>
+                <option value="Moxico — Alto Zambeze" data-code="MX">Moxico — Alto Zambeze  [MX]</option>
+                <option value="Moxico — Bundas" data-code="MX">Moxico — Bundas  [MX]</option>
+                <option value="Moxico — Cameia" data-code="MX">Moxico — Cameia  [MX]</option>
+                <option value="Moxico — Camanongue" data-code="MX">Moxico — Camanongue  [MX]</option>
+                <option value="Moxico — Léua" data-code="MX">Moxico — Léua  [MX]</option>
+                <option value="Moxico — Luacano" data-code="MX">Moxico — Luacano  [MX]</option>
+                <option value="Moxico — Luau" data-code="MX">Moxico — Luau  [MX]</option>
+                <option value="Moxico — Luchazes" data-code="MX">Moxico — Luchazes  [MX]</option>
+                <option value="Moxico — Lumeje" data-code="MX">Moxico — Lumeje  [MX]</option>
+                <option value="Moxico — Luena" data-code="MX">Moxico — Luena  [MX]</option>
+                <option value="Namibe — Bibala" data-code="NM">Namibe — Bibala  [NM]</option>
+                <option value="Namibe — Camucuio" data-code="NM">Namibe — Camucuio  [NM]</option>
+                <option value="Namibe — Moçâmedes" data-code="NM">Namibe — Moçâmedes  [NM]</option>
+                <option value="Namibe — Tômbua" data-code="NM">Namibe — Tômbua  [NM]</option>
+                <option value="Namibe — Virei" data-code="NM">Namibe — Virei  [NM]</option>
+                <option value="Uíge — Aldeia Viçosa" data-code="UI">Uíge — Aldeia Viçosa  [UI]</option>
+                <option value="Uíge — Alto Cauale" data-code="UI">Uíge — Alto Cauale  [UI]</option>
+                <option value="Uíge — Ambuíla" data-code="UI">Uíge — Ambuíla  [UI]</option>
+                <option value="Uíge — Bembe" data-code="UI">Uíge — Bembe  [UI]</option>
+                <option value="Uíge — Buengas" data-code="UI">Uíge — Buengas  [UI]</option>
+                <option value="Uíge — Bungo" data-code="UI">Uíge — Bungo  [UI]</option>
+                <option value="Uíge — Cangola" data-code="UI">Uíge — Cangola  [UI]</option>
+                <option value="Uíge — Damba" data-code="UI">Uíge — Damba  [UI]</option>
+                <option value="Uíge — Milunga" data-code="UI">Uíge — Milunga  [UI]</option>
+                <option value="Uíge — Mucaba" data-code="UI">Uíge — Mucaba  [UI]</option>
+                <option value="Uíge — Negage" data-code="UI">Uíge — Negage  [UI]</option>
+                <option value="Uíge — Puri" data-code="UI">Uíge — Puri  [UI]</option>
+                <option value="Uíge — Quimbele" data-code="UI">Uíge — Quimbele  [UI]</option>
+                <option value="Uíge — Quitexe" data-code="UI">Uíge — Quitexe  [UI]</option>
+                <option value="Uíge — Sanza Pombo" data-code="UI">Uíge — Sanza Pombo  [UI]</option>
+                <option value="Uíge — Songo" data-code="UI">Uíge — Songo  [UI]</option>
+                <option value="Uíge — Uíge" data-code="UI">Uíge — Uíge  [UI]</option>
+                <option value="Uíge — Zombo" data-code="UI">Uíge — Zombo  [UI]</option>
+                <option value="Zaire — Cuimba" data-code="ZA">Zaire — Cuimba  [ZA]</option>
+                <option value="Zaire — M'banza Kongo" data-code="ZA">Zaire — M'banza Kongo  [ZA]</option>
+                <option value="Zaire — Nóqui" data-code="ZA">Zaire — Nóqui  [ZA]</option>
+                <option value="Zaire — Nzeto" data-code="ZA">Zaire — Nzeto  [ZA]</option>
+                <option value="Zaire — São Salvador do Congo" data-code="ZA">Zaire — São Salvador do Congo  [ZA]</option>
+                <option value="Zaire — Soyo" data-code="ZA">Zaire — Soyo  [ZA]</option>
+                <option value="Zaire — Tomboco" data-code="ZA">Zaire — Tomboco  [ZA]</option>
+                </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS COMUNS -->
+        <div class="frow">
+          <div class="fgroup"><label>Saldo em Dívida (Kz)</label><input id="f-divida" type="number" value="0" placeholder="0"></div>
+          <div class="fgroup"><label>Créditos / Reembolsos (Kz)</label><input id="f-creditos" type="number" value="0" placeholder="0"></div>
+        </div>
+        <div id="formador-alert"></div>
+        <button class="btn btn-orange" onclick="cadastrarEmpresa()">✅ Cadastrar Contribuinte</button>
+      </div>
+    </div>
+
+    <!-- LISTA DE EMPRESAS -->
+    <div class="card">
+      <div class="card-head">
+        <h3>📋 Empresas Cadastradas (<span id="count-empresas">0</span>)</h3>
+        <button class="btn btn-sm btn-danger" onclick="limparEmpresas()">🗑 Limpar Todas</button>
+      </div>
+      <div class="card-body-flush" id="lista-empresas">
+        <div style="padding:30px;text-align:center;color:var(--gray-400)">Nenhuma empresa cadastrada ainda.</div>
+      </div>
+    </div>
+
+    <!-- ALTERAR PIN -->
+    <div class="card">
+      <div class="card-head"><h3>🔐 Alterar PIN do Formador</h3></div>
+      <div class="card-body">
+        <div class="frow">
+          <div class="fgroup"><label>Novo PIN (4 dígitos)</label><input id="pin-novo" type="password" maxlength="4" placeholder="••••"></div>
+          <div class="fgroup"><label>Confirmar PIN</label><input id="pin-conf" type="password" maxlength="4" placeholder="••••"></div>
+        </div>
+        <button class="btn btn-secondary" onclick="alterarPin()">🔒 Alterar PIN</button>
+        <div id="pin-msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: PORTAL (ESTAGIÁRIO)
+══════════════════════════════════════════ -->
+<div id="screen-portal" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span style="font-size:22px">🏛️</span>
+      <div>
+        <div class="topbar-logo">Portal do Contribuinte <span>SIMULADOR</span></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-company">
+        <strong id="top-nome">—</strong>
+        <small>NIF: <span id="top-nif">—</span></small>
+      </div>
+      <button class="btn-logout" onclick="voltarLogin()">Sair</button>
+    </div>
+  </div>
+
+  <div class="subbar" id="main-subbar">
+    <button class="nav-btn active" onclick="goSection('dashboard')">🏠 Início</button>
+    <button class="nav-btn" onclick="goSection('cadastro')">📋 Cadastro</button>
+    <button class="nav-btn" onclick="goSection('declaracoes')">📄 Declarações</button>
+    <button class="nav-btn" onclick="goSection('pagamentos')">💳 Pagamentos</button>
+    <button class="nav-btn" onclick="goSection('contacorrente')">📊 Conta Corrente</button>
+    <button class="nav-btn" onclick="goSection('certidoes')">🎖 Certidões</button>
+    <button class="nav-btn" onclick="goSection('faturacao')">🧾 Facturação</button>
+    <button class="nav-btn" onclick="goSection('notificacoes')">🔔 Notificações <span class="nav-badge">3</span></button>
+  </div>
+
+  <div class="app-layout">
+    <div class="sidebar">
+      <div class="sidebar-label">Menu Principal</div>
+      <button class="sidebar-btn active" id="sb-dashboard" onclick="goSection('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Painel Principal
+      </button>
+      <button class="sidebar-btn" id="sb-cadastro" onclick="goSection('cadastro')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Cadastro / NIF
+      </button>
+      <div class="sidebar-label">Obrigações Fiscais</div>
+      <button class="sidebar-btn" id="sb-declaracoes" onclick="goSection('declaracoes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Declarações Fiscais
+      </button>
+      <button class="sidebar-btn" id="sb-pagamentos" onclick="goSection('pagamentos')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Guias de Pagamento
+      </button>
+      <button class="sidebar-btn" id="sb-contacorrente" onclick="goSection('contacorrente')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Conta Corrente
+      </button>
+      <div class="sidebar-label">Serviços</div>
+      <button class="sidebar-btn" id="sb-certidoes" onclick="goSection('certidoes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+        Certidões
+      </button>
+      <button class="sidebar-btn" id="sb-faturacao" onclick="goSection('faturacao')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+        Facturação Electr.
+      </button>
+      <button class="sidebar-btn" id="sb-notificacoes" onclick="goSection('notificacoes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notificações
+        <span class="sidebar-count">3</span>
+      </button>
+    </div>
+
+    <div class="content">
+      <div class="sim-alert">⚠️ <strong>Ambiente de Simulação</strong> — Todos os dados são fictícios. Destina-se exclusivamente a formação. Nenhuma operação tem efeito real.</div>
+
+      <!-- ─── DASHBOARD ─── -->
+      <div id="sec-dashboard">
+        <div class="page-title" id="dash-title">Bem-vindo</div>
+        <div class="page-sub" id="dash-sub">Portal do Contribuinte — AGT Angola</div>
+        <div class="stats-row">
+          <div class="stat red"><label>Saldo em Dívida</label><div class="val" id="d-divida">0 Kz</div><div class="sub">Impostos por liquidar</div></div>
+          <div class="stat green"><label>Créditos / Reembolsos</label><div class="val" id="d-creditos">0 Kz</div><div class="sub">Disponível para compensar</div></div>
+          <div class="stat"><label>Declarações Entregues</label><div class="val">14</div><div class="sub">Exercício 2024</div></div>
+          <div class="stat"><label>Facturas Emitidas</label><div class="val">327</div><div class="sub">Ano corrente</div></div>
+        </div>
+        <div class="quick-grid">
+          <div class="quick-btn" onclick="goSection('declaracoes')"><div class="qico">📄</div><span>Nova Declaração</span></div>
+          <div class="quick-btn" onclick="goSection('pagamentos')"><div class="qico">💳</div><span>Emitir Guia</span></div>
+          <div class="quick-btn" onclick="goSection('certidoes')"><div class="qico">🎖</div><span>Pedir Certidão</span></div>
+          <div class="quick-btn" onclick="goSection('faturacao')"><div class="qico">🧾</div><span>Nova Factura</span></div>
+          <div class="quick-btn" onclick="goSection('contacorrente')"><div class="qico">📊</div><span>Conta Corrente</span></div>
+          <div class="quick-btn" onclick="goSection('cadastro')"><div class="qico">🏢</div><span>Ver Cadastro</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-head"><h3>Obrigações Pendentes</h3></div>
+            <div class="card-body-flush">
+              <table>
+                <tr><th>Imposto</th><th>Período</th><th>Estado</th><th>Prazo</th></tr>
+                <tr><td>IVA</td><td>Abr 2025</td><td><span class="badge badge-err">Em falta</span></td><td style="color:var(--red)">30/05/25</td></tr>
+                <tr><td>IRT</td><td>Abr 2025</td><td><span class="badge badge-err">Em falta</span></td><td style="color:var(--red)">15/05/25</td></tr>
+                <tr><td>Imp. Industrial</td><td>2024</td><td><span class="badge badge-warn">Rascunho</span></td><td>31/05/25</td></tr>
+                <tr><td>IVA</td><td>Mar 2025</td><td><span class="badge badge-ok">Entregue</span></td><td>—</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Actividade Recente</h3></div>
+            <div class="card-body">
+              <ul class="timeline">
+                <li class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><strong>Declaração IVA Março enviada</strong><small>15/04/2025 · Ref: DEC-2025-03789</small></div></li>
+                <li class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><strong>Pagamento IRT — 87.400 Kz</strong><small>12/04/2025 · Guia nº GP-12874</small></div></li>
+                <li class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><strong>Certidão de Não Devedor emitida</strong><small>01/04/2025 · Ref. CND-2025-00412</small></div></li>
+                <li class="tl-item"><div class="tl-dot"></div><div class="tl-text"><strong>Factura FT 2025/127 comunicada</strong><small>28/03/2025</small></div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CADASTRO ─── -->
+      <div id="sec-cadastro" class="hidden">
+        <div class="page-title">Cadastro do Contribuinte</div>
+        <div class="page-sub">Dados de registo da empresa no sistema AGT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-head"><h3>Dados da Empresa</h3>
+              <button class="btn btn-secondary btn-sm" onclick="toggleEditCadastro()">✏️ Editar</button>
+            </div>
+            <div class="card-body">
+              <div class="nif-box">
+                <div style="font-size:11px;color:var(--gray-400);margin-bottom:4px">Número de Identificação Fiscal</div>
+                <div class="num" id="cad-nif-display">—</div>
+                <div class="status">✅ NIF Activo e Válido (Simulação)</div>
+              </div>
+              <div id="cad-view">
+                <table>
+                  <tr><td style="color:var(--gray-400);width:130px">Denominação</td><td><strong id="cad-nome">—</strong></td></tr>
+                  <tr><td style="color:var(--gray-400)">Forma Jurídica</td><td id="cad-forma">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Actividade (CAE)</td><td id="cad-cae">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Grupo Tributário</td><td id="cad-grupo">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Sede</td><td id="cad-municipio">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Situação Fiscal</td><td id="cad-situacao">—</td></tr>
+                </table>
+              </div>
+              <div id="cad-edit" class="hidden">
+                <div class="fgroup"><label>Denominação Social</label><input id="cad-edit-nome"></div>
+                <div class="fgroup"><label>Morada da Sede</label><input id="cad-edit-morada" placeholder="Rua, nº, Município"></div>
+                <div class="fgroup"><label>Telefone</label><input id="cad-edit-tel" placeholder="+244 9XX XXX XXX"></div>
+                <div class="fgroup"><label>Email</label><input id="cad-edit-email" placeholder="geral@empresa.ao"></div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="btn btn-primary" onclick="salvarCadastro()">✅ Guardar Alterações</button>
+                  <button class="btn btn-secondary" onclick="cancelarCadastro()">Cancelar</button>
+                </div>
+              </div>
+              <div id="cad-success" class="hidden" style="margin-top:10px">
+                <div class="alert-box alert-ok">✅ Dados actualizados com sucesso! (Simulação)</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Representantes / Gerentes</h3></div>
+            <div class="card-body-flush">
+              <table>
+                <tr><th>Nome</th><th>Cargo</th><th>NIF Pessoal</th></tr>
+                <tr><td>António M. Silva</td><td>Sócio-Gerente</td><td>000456789</td></tr>
+                <tr><td>Maria J. Santos</td><td>Directora Financeira</td><td>001234567</td></tr>
+                <tr><td>Carlos R. Lopes</td><td>TOC</td><td>009876543</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── DECLARAÇÕES ─── -->
+      <div id="sec-declaracoes" class="hidden">
+        <div class="page-title">Declarações Fiscais</div>
+        <div class="page-sub">Submissão e consulta de declarações periódicas</div>
+        <div class="tabs-row">
+          <button class="tab-btn active" id="dtab-hist" onclick="switchDTab('hist')">Histórico</button>
+          <button class="tab-btn" id="dtab-nova" onclick="switchDTab('nova')">Nova Declaração</button>
+        </div>
+        <div id="dec-hist">
+          <div class="card card-body-flush">
+            <table>
+              <tr><th>Referência</th><th>Tipo</th><th>Período</th><th>Data Envio</th><th>Valor</th><th>Estado</th></tr>
+              <tr><td style="font-family:var(--mono);font-size:12px">DEC-2025-03789</td><td>IVA</td><td>Mar 2025</td><td>15/04/25</td><td>312.400 Kz</td><td><span class="badge badge-ok">Aceite</span></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:12px">DEC-2025-03210</td><td>IRT</td><td>Mar 2025</td><td>12/04/25</td><td>87.400 Kz</td><td><span class="badge badge-ok">Aceite</span></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:12px">DEC-2025-02987</td><td>IVA</td><td>Fev 2025</td><td>14/03/25</td><td>289.100 Kz</td><td><span class="badge badge-ok">Aceite</span></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:12px">DEC-2025-01120</td><td>Imp. Industrial</td><td>2024</td><td>—</td><td>—</td><td><span class="badge badge-warn">Rascunho</span></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:12px">DEC-2024-18990</td><td>IVA</td><td>Jan 2025</td><td>15/02/25</td><td>301.800 Kz</td><td><span class="badge badge-ok">Aceite</span></td></tr>
+            </table>
+          </div>
+        </div>
+        <div id="dec-nova" class="hidden">
+          <div class="card">
+            <div class="card-head"><h3>Submeter Nova Declaração</h3></div>
+            <div class="card-body" id="dec-form-wrap">
+              <div id="dec-form">
+                <div class="frow">
+                  <div class="fgroup"><label>Tipo de Imposto</label>
+                    <select id="dec-tipo" onchange="updateDecFields()">
+                      <option value="">— Seleccionar —</option>
+                      <option value="iva">IVA — Imposto sobre o Valor Acrescentado</option>
+                      <option value="irt">IRT — Imposto sobre o Rendimento do Trabalho</option>
+                      <option value="ii">Imposto Industrial (IRC)</option>
+                      <option value="iac">IAC — Imposto s/ Aplicação de Capitais</option>
+                      <option value="is">Imposto de Selo</option>
+                      <option value="ipu">IPU — Imposto Predial Urbano</option>
+                    </select>
+                  </div>
+                  <div class="fgroup"><label>Período de Referência</label>
+                    <select id="dec-periodo">
+                      <option>Abril 2025</option><option>Março 2025</option>
+                      <option>Fevereiro 2025</option><option>2024 (Anual)</option>
+                    </select>
+                  </div>
+                </div>
+                <!-- IVA -->
+                <div id="fields-iva" class="hidden">
+                  <hr class="divider">
+                  <p style="font-weight:700;margin-bottom:12px;color:var(--gray-900)">Mapa de IVA</p>
+                  <div class="frow3">
+                    <div class="fgroup"><label>Volume Vendas (Kz)</label><input type="number" id="iva-vendas" value="1850000" oninput="calcIVA()"></div>
+                    <div class="fgroup"><label>IVA Liquidado (14%)</label><input type="number" id="iva-liq" readonly></div>
+                    <div class="fgroup"><label>IVA Dedutível</label><input type="number" id="iva-ded" value="78400" oninput="calcIVA()"></div>
+                  </div>
+                  <div class="total-bar"><span>IVA a Pagar (Apurado)</span><strong id="iva-total">—</strong></div>
+                </div>
+                <!-- IRT -->
+                <div id="fields-irt" class="hidden">
+                  <hr class="divider">
+                  <p style="font-weight:700;margin-bottom:12px;color:var(--gray-900)">Mapa de IRT</p>
+                  <table style="margin-bottom:12px">
+                    <tr><th>Trabalhador</th><th>Categoria</th><th>Salário Bruto</th><th>IRT Retido</th></tr>
+                    <tr><td>João P. Ferreira</td><td>A</td><td>350.000 Kz</td><td>52.500 Kz</td></tr>
+                    <tr><td>Ana L. Costa</td><td>A</td><td>280.000 Kz</td><td>39.200 Kz</td></tr>
+                    <tr><td>Pedro M. Neto</td><td>B</td><td>180.000 Kz</td><td>22.500 Kz</td></tr>
+                    <tr><td>Sofia R. Dias</td><td>B</td><td>160.000 Kz</td><td>19.200 Kz</td></tr>
+                  </table>
+                  <div class="total-bar"><span>Total IRT a Entregar</span><strong>133.400 Kz</strong></div>
+                </div>
+                <!-- II -->
+                <div id="fields-ii" class="hidden">
+                  <hr class="divider">
+                  <p style="font-weight:700;margin-bottom:12px;color:var(--gray-900)">Declaração de Imposto Industrial — 2024</p>
+                  <div class="frow">
+                    <div class="fgroup"><label>Proveitos Totais (Kz)</label><input type="number" value="22500000" id="ii-prov" oninput="calcII()"></div>
+                    <div class="fgroup"><label>Custos Dedutíveis (Kz)</label><input type="number" value="18200000" id="ii-cust" oninput="calcII()"></div>
+                  </div>
+                  <div class="frow">
+                    <div class="fgroup"><label>Matéria Colectável</label><input id="ii-mc" readonly></div>
+                    <div class="fgroup"><label>Taxa</label><select id="ii-taxa" onchange="calcII()"><option value="0.25">25% — Grupo A</option><option value="0.15">15% — Grupo B</option></select></div>
+                  </div>
+                  <div class="total-bar"><span>Imposto Industrial a Pagar</span><strong id="ii-total">—</strong></div>
+                </div>
+                <!-- Genérico -->
+                <div id="fields-generico" class="hidden">
+                  <hr class="divider">
+                  <div class="frow">
+                    <div class="fgroup"><label>Matéria Colectável (Kz)</label><input type="number" value="500000" id="gen-mc" oninput="calcGen()"></div>
+                    <div class="fgroup"><label>Taxa (%)</label><input type="number" value="5" id="gen-taxa" oninput="calcGen()"></div>
+                  </div>
+                  <div class="total-bar"><span>Imposto Apurado</span><strong id="gen-total">—</strong></div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px">
+                  <button class="btn btn-primary" onclick="submeterDeclaracao()">📤 Submeter Declaração</button>
+                  <button class="btn btn-secondary">💾 Guardar Rascunho</button>
+                </div>
+              </div>
+              <div id="dec-success" class="hidden success-block">
+                <span class="ico">✅</span>
+                <h3>Declaração submetida com sucesso!</h3>
+                <p>Referência: <strong id="dec-ref">—</strong> · Data: <strong id="dec-data">—</strong></p>
+                <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-primary" onclick="switchDTab('hist')">📋 Ver Histórico</button>
+                  <button class="btn btn-secondary" onclick="resetDec()">➕ Nova Declaração</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PAGAMENTOS ─── -->
+      <div id="sec-pagamentos" class="hidden">
+        <div class="page-title">Guias de Pagamento</div>
+        <div class="page-sub">Emita e registe pagamentos de impostos</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-head"><h3>Emitir Nova Guia</h3></div>
+            <div id="guia-form-area" class="card-body">
+              <div class="fgroup"><label>Tipo de Imposto</label>
+                <select id="guia-tipo">
+                  <option>IVA — Abril 2025</option><option>IRT — Abril 2025</option>
+                  <option>Imposto Industrial 2024</option><option>Imposto de Selo</option>
+                </select>
+              </div>
+              <div class="frow">
+                <div class="fgroup"><label>Valor Principal (Kz)</label><input type="number" id="guia-val" value="181600" oninput="calcGuia()"></div>
+                <div class="fgroup"><label>Juros / Mora</label><input type="number" id="guia-juros" value="0" readonly></div>
+              </div>
+              <div class="total-bar"><span>Total a Pagar</span><strong id="guia-total">181.600 Kz</strong></div>
+              <button class="btn btn-primary" onclick="gerarGuia()">📥 Gerar Guia de Pagamento</button>
+            </div>
+            <div id="guia-preview-area" class="card-body hidden">
+              <div class="guia-doc">
+                <div class="guia-top">
+                  <div>
+                    <div style="font-weight:700;color:var(--blue);font-size:14px">REPÚBLICA DE ANGOLA</div>
+                    <div style="font-size:11px;color:var(--gray-400)">Ministério das Finanças · AGT</div>
+                    <div style="font-size:11px;color:var(--orange);font-weight:700;margin-top:3px">⚠ SIMULAÇÃO — Sem validade fiscal</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div style="font-weight:700;color:var(--blue)">GUIA DE PAGAMENTO</div>
+                    <div style="font-family:var(--mono);font-size:12px" id="gp-num">GP-2025-00000</div>
+                  </div>
+                </div>
+                <table>
+                  <tr><td style="color:var(--gray-400);width:100px">Contribuinte</td><td><strong id="gp-contrib">—</strong></td></tr>
+                  <tr><td style="color:var(--gray-400)">NIF</td><td id="gp-nif">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Imposto</td><td id="gp-tipo">—</td></tr>
+                  <tr><td style="color:var(--gray-400)">Data Limite</td><td style="color:var(--red)">30/05/2025</td></tr>
+                  <tr><td style="color:var(--gray-400)">Valor</td><td style="font-weight:700;font-size:15px;color:var(--blue)" id="gp-val">—</td></tr>
+                </table>
+                <div class="barcode"></div>
+                <div style="font-size:10px;color:var(--gray-400);font-family:var(--mono)" id="gp-codigo">9050 0000 0000 0000 0000 0000</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-secondary btn-sm">🖨 Imprimir</button>
+                <button class="btn btn-secondary btn-sm">📄 PDF</button>
+                <button class="btn btn-success btn-sm" onclick="pagarOnline()">💳 Pagar Online</button>
+                <button class="btn btn-sm" style="background:var(--gray-100)" onclick="novaGuia()">← Nova Guia</button>
+              </div>
+              <div id="pag-ok" class="hidden" style="margin-top:10px">
+                <div class="alert-box alert-ok">✅ Pagamento registado! Comprovativo: <strong id="pag-comp">—</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Histórico de Pagamentos</h3></div>
+            <div class="card-body-flush">
+              <table>
+                <tr><th>Nº Guia</th><th>Imposto</th><th>Valor</th><th>Data</th><th>Est.</th></tr>
+                <tr><td>GP-12874</td><td>IRT Mar</td><td>87.400 Kz</td><td>12/04/25</td><td><span class="badge badge-ok">Pago</span></td></tr>
+                <tr><td>GP-12510</td><td>IVA Fev</td><td>289.100 Kz</td><td>14/03/25</td><td><span class="badge badge-ok">Pago</span></td></tr>
+                <tr><td>GP-12211</td><td>IRT Fev</td><td>91.200 Kz</td><td>11/03/25</td><td><span class="badge badge-ok">Pago</span></td></tr>
+                <tr><td>GP-11987</td><td>IVA Jan</td><td>301.800 Kz</td><td>14/02/25</td><td><span class="badge badge-ok">Pago</span></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CONTA CORRENTE ─── -->
+      <div id="sec-contacorrente" class="hidden">
+        <div class="page-title">Extracto de Conta Corrente</div>
+        <div class="page-sub">Todos os movimentos fiscais — débitos, créditos e saldo</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="frow3">
+              <div class="fgroup"><label>Data Início</label><input type="date" value="2025-01-01"></div>
+              <div class="fgroup"><label>Data Fim</label><input type="date" value="2025-04-30"></div>
+              <div class="fgroup"><label>Filtro</label><select><option>Todos os movimentos</option><option>Só Débitos</option><option>Só Créditos</option></select></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary">🔍 Consultar</button>
+              <button class="btn btn-secondary">📊 Exportar Excel</button>
+              <button class="btn btn-secondary">📄 Exportar PDF</button>
+            </div>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat red"><label>Total Débitos</label><div class="val">1.214.500 Kz</div></div>
+          <div class="stat green"><label>Total Créditos</label><div class="val">968.700 Kz</div></div>
+          <div class="stat amber"><label>Saldo em Dívida</label><div class="val" id="cc-divida">0 Kz</div></div>
+        </div>
+        <div class="card card-body-flush">
+          <table>
+            <tr><th>Data</th><th>Nota Liquidação</th><th>Descrição</th><th>Débito</th><th>Crédito</th><th>Saldo</th></tr>
+            <tr><td>01/04/25</td><td style="font-family:var(--mono);font-size:11px">NL-2025-04431</td><td>IVA Março 2025</td><td style="color:var(--red)">312.400 Kz</td><td>—</td><td style="color:var(--red)">312.400 Kz</td></tr>
+            <tr><td>15/04/25</td><td>—</td><td>Pagamento Guia GP-12874</td><td>—</td><td style="color:var(--green)">312.400 Kz</td><td>0 Kz</td></tr>
+            <tr><td>01/03/25</td><td style="font-family:var(--mono);font-size:11px">NL-2025-03110</td><td>IRT Fevereiro 2025</td><td style="color:var(--red)">91.200 Kz</td><td>—</td><td style="color:var(--red)">91.200 Kz</td></tr>
+            <tr><td>11/03/25</td><td>—</td><td>Pagamento Guia GP-12211</td><td>—</td><td style="color:var(--green)">91.200 Kz</td><td>0 Kz</td></tr>
+            <tr><td>01/02/25</td><td style="font-family:var(--mono);font-size:11px">NL-2025-01987</td><td>IVA Janeiro 2025</td><td style="color:var(--red)">301.800 Kz</td><td>—</td><td style="color:var(--red)">301.800 Kz</td></tr>
+            <tr><td>14/02/25</td><td>—</td><td>Pagamento Guia GP-11987</td><td>—</td><td style="color:var(--green)">301.800 Kz</td><td>0 Kz</td></tr>
+            <tr style="background:#fef2f2"><td>01/05/25</td><td style="font-family:var(--mono);font-size:11px">NL-2025-05001</td><td>IVA Abril 2025 (pendente)</td><td style="color:var(--red)">181.600 Kz</td><td>—</td><td style="color:var(--red);font-weight:700">181.600 Kz</td></tr>
+            <tr style="background:#fef2f2"><td>01/05/25</td><td style="font-family:var(--mono);font-size:11px">NL-2025-05002</td><td>IRT Abril 2025 (pendente)</td><td style="color:var(--red)">133.400 Kz</td><td>—</td><td style="color:var(--red);font-weight:700">315.000 Kz</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── CERTIDÕES ─── -->
+      <div id="sec-certidoes" class="hidden">
+        <div class="page-title">Emissão de Certidões</div>
+        <div class="page-sub">Solicite documentos comprovativos da situação fiscal</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-head"><h3>Pedir Certidão</h3></div>
+            <div class="card-body">
+              <div class="fgroup"><label>Tipo de Certidão</label>
+                <select id="cert-tipo">
+                  <option value="cnd">Certidão de Não Devedor</option>
+                  <option value="reg">Certidão de Regularidade Fiscal</option>
+                  <option value="cad">Certidão de Cadastro</option>
+                  <option value="div">Certidão de Dívida</option>
+                </select>
+              </div>
+              <div class="fgroup"><label>Finalidade</label>
+                <select id="cert-finalidade">
+                  <option>Concurso Público / Licitação</option>
+                  <option>Registo de Empresa</option>
+                  <option>Abertura de Conta Bancária</option>
+                  <option>Contrato com o Estado</option>
+                  <option>Financiamento Bancário</option>
+                </select>
+              </div>
+              <div class="fgroup"><label>Observações</label>
+                <textarea rows="3" style="width:100%;padding:9px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;resize:vertical" placeholder="Opcional"></textarea>
+              </div>
+              <button class="btn btn-primary" onclick="emitirCertidao()">🎖 Emitir Certidão</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Certidões Emitidas</h3></div>
+            <div class="card-body-flush">
+              <table>
+                <tr><th>Referência</th><th>Tipo</th><th>Data</th><th>Validade</th></tr>
+                <tr><td style="font-family:var(--mono);font-size:11px">CND-2025-00412</td><td>Não Devedor</td><td>01/04/25</td><td><span class="badge badge-ok">Válida</span></td></tr>
+                <tr><td style="font-family:var(--mono);font-size:11px">CND-2025-00198</td><td>Não Devedor</td><td>15/02/25</td><td><span class="badge badge-warn">Expirou</span></td></tr>
+                <tr><td style="font-family:var(--mono);font-size:11px">CAD-2024-01122</td><td>Cadastro</td><td>10/12/24</td><td><span class="badge badge-warn">Expirou</span></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="cert-doc-area" class="hidden" style="margin-top:16px">
+          <div class="cert-doc">
+            <div class="cert-watermark">SIMULAÇÃO</div>
+            <div class="cert-header">
+              <div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:6px">REPÚBLICA DE ANGOLA · MINISTÉRIO DAS FINANÇAS</div>
+              <h2>ADMINISTRAÇÃO GERAL TRIBUTÁRIA</h2>
+              <div style="margin-top:6px"><span class="badge badge-sim">⚠ SIMULAÇÃO — Sem validade legal</span></div>
+            </div>
+            <div class="cert-body">
+              <p>A <strong>Administração Geral Tributária (AGT)</strong>, para os devidos efeitos legais, certifica que o contribuinte:</p>
+              <br>
+              <p><strong>Denominação:</strong> <span id="cert-nome">—</span></p>
+              <p><strong>NIF:</strong> <span id="cert-nif">—</span></p>
+              <p><strong>Sede:</strong> <span id="cert-sede">—</span></p>
+              <br>
+              <p id="cert-texto">…</p>
+              <br>
+              <p>Certidão emitida para fins de <strong id="cert-finalidade-text">—</strong>. Válida por <strong>90 dias</strong> a contar da data de emissão.</p>
+            </div>
+            <div class="cert-footer">
+              <div>
+                <strong>Referência:</strong> <span id="cert-ref">—</span><br>
+                <strong>Emitida em:</strong> 21/05/2025<br>
+                <strong>Válida até:</strong> 19/08/2025
+              </div>
+              <div class="qr-placeholder">QR Code<br>(Simulado)</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-secondary">🖨 Imprimir</button>
+            <button class="btn btn-secondary">📄 PDF</button>
+            <button class="btn btn-primary" onclick="novaCertidao()">🎖 Nova Certidão</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── FACTURAÇÃO ─── -->
+      <div id="sec-faturacao" class="hidden">
+        <div class="page-title">Facturação Electrónica</div>
+        <div class="page-sub">Emissão, comunicação e gestão de facturas via AGT</div>
+        <div class="tabs-row">
+          <button class="tab-btn active" id="ftab-list" onclick="switchFTab('list')">Facturas Emitidas</button>
+          <button class="tab-btn" id="ftab-nova" onclick="switchFTab('nova')">Nova Factura</button>
+        </div>
+        <div id="fat-list">
+          <div class="card card-body-flush">
+            <table>
+              <tr><th>Nº Factura</th><th>Cliente</th><th>Data</th><th>Base</th><th>IVA</th><th>Total</th><th>Estado</th></tr>
+              <tr><td>FT 2025/127</td><td>SONAREF, EP</td><td>28/03/25</td><td>2.800.000 Kz</td><td>392.000 Kz</td><td>3.192.000 Kz</td><td><span class="badge badge-ok">Comunicada</span></td></tr>
+              <tr><td>FT 2025/126</td><td>ANGOLA TELECOM</td><td>25/03/25</td><td>1.500.000 Kz</td><td>210.000 Kz</td><td>1.710.000 Kz</td><td><span class="badge badge-ok">Comunicada</span></td></tr>
+              <tr><td>FT 2025/125</td><td>MINTECH, LDA</td><td>20/03/25</td><td>980.000 Kz</td><td>137.200 Kz</td><td>1.117.200 Kz</td><td><span class="badge badge-ok">Comunicada</span></td></tr>
+              <tr><td>NC 2025/003</td><td>MINTECH, LDA</td><td>22/03/25</td><td>-200.000 Kz</td><td>-28.000 Kz</td><td>-228.000 Kz</td><td><span class="badge badge-info">Nota Crédito</span></td></tr>
+            </table>
+          </div>
+        </div>
+        <div id="fat-nova" class="hidden">
+          <div class="card">
+            <div class="card-head"><h3>Emitir Nova Factura</h3></div>
+            <div class="card-body">
+              <div id="fat-form">
+                <div class="frow">
+                  <div class="fgroup"><label>Tipo de Documento</label>
+                    <select><option>Factura (FT)</option><option>Factura Simplificada (FS)</option><option>Nota de Crédito (NC)</option><option>Nota de Débito (ND)</option></select>
+                  </div>
+                  <div class="fgroup"><label>Nº Sequencial</label><input value="FT 2025/128" readonly></div>
+                </div>
+                <div class="frow">
+                  <div class="fgroup"><label>Nome do Cliente</label><input id="fat-cliente" placeholder="Denominação do cliente"></div>
+                  <div class="fgroup"><label>NIF do Cliente</label><input placeholder="NIF ou Passaporte"></div>
+                </div>
+                <hr class="divider">
+                <p style="font-weight:700;margin-bottom:10px">Linhas da Factura</p>
+                <table style="margin-bottom:10px">
+                  <tr><th>Descrição</th><th>Qtd</th><th>Preço Unit.</th><th>IVA</th><th>Total Linha</th></tr>
+                  <tr>
+                    <td><input placeholder="Serviço / Produto" style="width:100%;padding:5px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px"></td>
+                    <td><input type="number" value="1" id="fat-qty" oninput="calcFatura()" style="width:55px;padding:5px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px"></td>
+                    <td><input type="number" value="500000" id="fat-preco" oninput="calcFatura()" style="width:110px;padding:5px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px"></td>
+                    <td><select style="padding:5px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px"><option>14%</option><option>0% Isento</option></select></td>
+                    <td style="font-weight:600;font-family:var(--mono);font-size:12px" id="fat-linha">500.000 Kz</td>
+                  </tr>
+                </table>
+                <div style="background:var(--gray-50);border-radius:8px;padding:14px;text-align:right;margin-bottom:14px">
+                  <div style="font-size:12px;color:var(--gray-400)">Base Tributável: <span id="fat-base">500.000 Kz</span></div>
+                  <div style="font-size:12px;color:var(--gray-400)">IVA (14%): <span id="fat-iva">70.000 Kz</span></div>
+                  <div style="font-size:17px;font-weight:700;color:var(--blue);margin-top:4px;font-family:var(--mono)">Total: <span id="fat-total">570.000 Kz</span></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-primary" onclick="emitirFatura()">📤 Emitir e Comunicar à AGT</button>
+                  <button class="btn btn-secondary">💾 Rascunho</button>
+                </div>
+              </div>
+              <div id="fat-success" class="hidden success-block">
+                <span class="ico">✅</span>
+                <h3>Factura emitida e comunicada!</h3>
+                <p>Nº: <strong>FT 2025/128</strong> · Código AGT: <strong>SIMX-4F7A-2025</strong></p>
+                <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-secondary">🖨 Imprimir Factura</button>
+                  <button class="btn btn-primary" onclick="resetFat()">➕ Nova Factura</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── NOTIFICAÇÕES ─── -->
+      <div id="sec-notificacoes" class="hidden">
+        <div class="page-title">Notificações e Mensagens</div>
+        <div class="page-sub">Comunicações da Administração Geral Tributária</div>
+        <div class="card card-body-flush">
+          <table>
+            <tr><th></th><th>Assunto</th><th>Tipo</th><th>Data</th></tr>
+            <tr style="background:#fffbeb">
+              <td style="padding-left:14px"><div style="width:8px;height:8px;background:var(--orange);border-radius:50%"></div></td>
+              <td><strong>Declaração de IVA de Abril 2025 em falta</strong><br><small style="color:var(--gray-400)">Prazo: 30/05/2025. Por favor proceda à submissão para evitar coimas.</small></td>
+              <td><span class="badge badge-warn">Aviso</span></td><td>01/05/2025</td>
+            </tr>
+            <tr style="background:#fef2f2">
+              <td style="padding-left:14px"><div style="width:8px;height:8px;background:var(--red);border-radius:50%"></div></td>
+              <td><strong>IRT de Abril 2025 — prazo ultrapassado</strong><br><small style="color:var(--gray-400)">Declaração em falta. Sujeita a coima (art. 38º CGT).</small></td>
+              <td><span class="badge badge-err">Urgente</span></td><td>16/05/2025</td>
+            </tr>
+            <tr style="background:#eff6ff">
+              <td style="padding-left:14px"><div style="width:8px;height:8px;background:var(--blue);border-radius:50%"></div></td>
+              <td><strong>Novo: Pagamento por Multicaixa Express disponível</strong><br><small style="color:var(--gray-400)">Já pode pagar os impostos directamente pelo Multicaixa Express.</small></td>
+              <td><span class="badge badge-info">Informação</span></td><td>10/05/2025</td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><div style="width:8px;height:8px;background:var(--gray-200);border-radius:50%"></div></td>
+              <td>Confirmação de pagamento — Guia GP-12874<br><small style="color:var(--gray-400)">Pagamento de 87.400 Kz recebido com sucesso.</small></td>
+              <td><span class="badge badge-ok">Confirmação</span></td><td>12/04/2025</td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><div style="width:8px;height:8px;background:var(--gray-200);border-radius:50%"></div></td>
+              <td>Certidão CND-2025-00412 emitida com sucesso<br><small style="color:var(--gray-400)">Válida até 01/07/2025.</small></td>
+              <td><span class="badge badge-info">Sistema</span></td><td>01/04/2025</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /app-layout -->
+</div><!-- /screen-portal -->
+
+<script>
+// ── STORAGE HELPERS (in-memory) ──
+let _empresas = [];
+let _pin = '1234';
+
+function getEmpresas() { return _empresas; }
+function saveEmpresas(arr) { _empresas = arr; }
+function getPin() { return _pin; }
+
+// ── LOGIN ──
+let currentEmpresa = null;
+
+function setLoginMode(m) {
+  document.getElementById('lt-estagiario').classList.toggle('active', m==='estagiario');
+  document.getElementById('lt-formador').classList.toggle('active', m==='formador');
+  document.getElementById('form-estagiario').classList.toggle('hidden', m!=='estagiario');
+  document.getElementById('form-formador').classList.toggle('hidden', m!=='formador');
+  document.getElementById('login-error').style.display='none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function loginEstagiario() {
+  const nif = document.getElementById('login-nif').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  if (!nif || !pass) { showError('Por favor preencha o NIF e a palavra-passe.'); return; }
+  const empresas = getEmpresas();
+  const emp = empresas.find(e => e.nif === nif && e.pass === pass);
+  if (!emp) { showError('NIF ou palavra-passe incorrectos. Contacte o formador.'); return; }
+  currentEmpresa = emp;
+  carregarPortal(emp);
+}
+
+function loginFormador() {
+  const pin = document.getElementById('formador-pin').value.trim();
+  if (pin !== getPin()) { showError('PIN incorrecto.'); return; }
+  showScreen('formador');
+  renderListaEmpresas();
+}
+
+function voltarLogin() {
+  currentEmpresa = null;
+  document.getElementById('login-nif').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('formador-pin').value = '';
+  document.getElementById('login-error').style.display='none';
+  showScreen('login');
+}
+
+function showScreen(s) {
+  ['login','formador','portal'].forEach(id => {
+    document.getElementById('screen-'+id).classList.toggle('active', id===s);
+  });
+}
+
+// ── CARREGAR PORTAL ──
+function carregarPortal(emp) {
+  document.getElementById('top-nome').textContent = emp.nome;
+  document.getElementById('top-nif').textContent = emp.nif;
+  document.getElementById('dash-title').textContent = 'Bem-vindo, ' + emp.nome;
+  document.getElementById('dash-sub').textContent = 'NIF: ' + emp.nif + ' · ' + emp.grupo + ' · Portal do Contribuinte — AGT Angola';
+  const fmt = v => Number(v||0).toLocaleString('pt-PT') + ' Kz';
+  document.getElementById('d-divida').textContent = fmt(emp.divida);
+  document.getElementById('d-creditos').textContent = fmt(emp.creditos);
+  document.getElementById('cc-divida').textContent = fmt(emp.divida);
+  // cadastro
+  document.getElementById('cad-nif-display').textContent = emp.nif;
+  document.getElementById('cad-nome').textContent = emp.nome;
+  document.getElementById('cad-forma').textContent = emp.forma;
+  document.getElementById('cad-cae').textContent = emp.cae;
+  document.getElementById('cad-grupo').textContent = emp.grupo;
+  document.getElementById('cad-municipio').textContent = emp.municipio;
+  document.getElementById('cad-situacao').innerHTML = Number(emp.divida||0) > 0
+    ? '<span class="badge badge-warn">Com dívidas em aberto</span>'
+    : '<span class="badge badge-ok">Regular</span>';
+  // guia
+  document.getElementById('gp-contrib').textContent = emp.nome;
+  document.getElementById('gp-nif').textContent = emp.nif;
+  // cert
+  document.getElementById('cert-nome').textContent = emp.nome;
+  document.getElementById('cert-nif').textContent = emp.nif;
+  document.getElementById('cert-sede').textContent = emp.municipio;
+  showScreen('portal');
+  goSection('dashboard');
+}
+
+// ── NAVEGAÇÃO ──
+const SECTIONS = ['dashboard','cadastro','declaracoes','pagamentos','contacorrente','certidoes','faturacao','notificacoes'];
+
+function goSection(s) {
+  SECTIONS.forEach(x => {
+    document.getElementById('sec-'+x).classList.toggle('hidden', x!==s);
+    const sb = document.getElementById('sb-'+x);
+    if (sb) sb.classList.toggle('active', x===s);
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', SECTIONS[i]===s);
+  });
+}
+
+// ── CADASTRO ──
+function toggleEditCadastro() {
+  document.getElementById('cad-view').classList.toggle('hidden');
+  document.getElementById('cad-edit').classList.remove('hidden');
+  document.getElementById('cad-success').classList.add('hidden');
+  if (currentEmpresa) {
+    document.getElementById('cad-edit-nome').value = currentEmpresa.nome;
+    document.getElementById('cad-edit-morada').value = currentEmpresa.municipio;
+  }
+}
+function cancelarCadastro() {
+  document.getElementById('cad-view').classList.remove('hidden');
+  document.getElementById('cad-edit').classList.add('hidden');
+}
+function salvarCadastro() {
+  document.getElementById('cad-edit').classList.add('hidden');
+  document.getElementById('cad-view').classList.remove('hidden');
+  document.getElementById('cad-success').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('cad-success').classList.add('hidden'), 4000);
+}
+
+// ── DECLARAÇÕES ──
+function switchDTab(t) {
+  document.getElementById('dtab-hist').classList.toggle('active', t==='hist');
+  document.getElementById('dtab-nova').classList.toggle('active', t==='nova');
+  document.getElementById('dec-hist').classList.toggle('hidden', t!=='hist');
+  document.getElementById('dec-nova').classList.toggle('hidden', t!=='nova');
+}
+function updateDecFields() {
+  const v = document.getElementById('dec-tipo').value;
+  ['iva','irt','ii','generico'].forEach(f => document.getElementById('fields-'+f).classList.add('hidden'));
+  if (v==='iva') { document.getElementById('fields-iva').classList.remove('hidden'); calcIVA(); }
+  else if (v==='irt') document.getElementById('fields-irt').classList.remove('hidden');
+  else if (v==='ii') { document.getElementById('fields-ii').classList.remove('hidden'); calcII(); }
+  else if (v) { document.getElementById('fields-generico').classList.remove('hidden'); calcGen(); }
+}
+function calcIVA() {
+  const v = parseFloat(document.getElementById('iva-vendas').value)||0;
+  const d = parseFloat(document.getElementById('iva-ded').value)||0;
+  const liq = v*0.14;
+  document.getElementById('iva-liq').value = Math.round(liq).toLocaleString('pt-PT');
+  const tot = Math.max(0, liq-d);
+  document.getElementById('iva-total').textContent = Math.round(tot).toLocaleString('pt-PT')+' Kz';
+}
+function calcII() {
+  const p = parseFloat(document.getElementById('ii-prov').value)||0;
+  const c = parseFloat(document.getElementById('ii-cust').value)||0;
+  const mc = Math.max(0, p-c);
+  document.getElementById('ii-mc').value = Math.round(mc).toLocaleString('pt-PT');
+  const taxa = parseFloat(document.getElementById('ii-taxa').value)||0.25;
+  document.getElementById('ii-total').textContent = Math.round(mc*taxa).toLocaleString('pt-PT')+' Kz';
+}
+function calcGen() {
+  const mc = parseFloat(document.getElementById('gen-mc').value)||0;
+  const taxa = parseFloat(document.getElementById('gen-taxa').value)||0;
+  document.getElementById('gen-total').textContent = Math.round(mc*(taxa/100)).toLocaleString('pt-PT')+' Kz';
+}
+function submeterDeclaracao() {
+  if (!document.getElementById('dec-tipo').value) { alert('Por favor seleccione o tipo de imposto.'); return; }
+  const ref = 'DEC-2025-0' + (Math.floor(Math.random()*9000)+1000);
+  document.getElementById('dec-ref').textContent = ref;
+  document.getElementById('dec-data').textContent = new Date().toLocaleDateString('pt-AO');
+  document.getElementById('dec-form').classList.add('hidden');
+  document.getElementById('dec-success').classList.remove('hidden');
+}
+function resetDec() {
+  document.getElementById('dec-form').classList.remove('hidden');
+  document.getElementById('dec-success').classList.add('hidden');
+  document.getElementById('dec-tipo').value = '';
+  ['iva','irt','ii','generico'].forEach(f => document.getElementById('fields-'+f).classList.add('hidden'));
+}
+
+// ── PAGAMENTOS ──
+function calcGuia() {
+  const v = parseFloat(document.getElementById('guia-val').value)||0;
+  document.getElementById('guia-total').textContent = Math.round(v).toLocaleString('pt-PT')+' Kz';
+}
+function gerarGuia() {
+  const v = parseFloat(document.getElementById('guia-val').value)||0;
+  const tipo = document.getElementById('guia-tipo').value;
+  const num = 'GP-2025-' + (Math.floor(Math.random()*90000)+10000);
+  document.getElementById('gp-num').textContent = num;
+  document.getElementById('gp-tipo').textContent = tipo;
+  document.getElementById('gp-val').textContent = Math.round(v).toLocaleString('pt-PT')+' Kz';
+  const cod = Array.from({length:6},()=>Math.floor(Math.random()*10000).toString().padStart(4,'0')).join(' ');
+  document.getElementById('gp-codigo').textContent = cod;
+  document.getElementById('guia-form-area').classList.add('hidden');
+  document.getElementById('guia-preview-area').classList.remove('hidden');
+  document.getElementById('pag-ok').classList.add('hidden');
+}
+function pagarOnline() {
+  const comp = 'COMP-2025-0' + (Math.floor(Math.random()*90000)+10000);
+  document.getElementById('pag-comp').textContent = comp;
+  document.getElementById('pag-ok').classList.remove('hidden');
+}
+function novaGuia() {
+  document.getElementById('guia-form-area').classList.remove('hidden');
+  document.getElementById('guia-preview-area').classList.add('hidden');
+}
+
+// ── CERTIDÕES ──
+const CERT_TEXTOS = {
+  cnd: 'se encontra em situação fiscal <strong>REGULAR</strong>, não constando nos registos da AGT qualquer dívida tributária exigível à data da presente certidão.',
+  reg: 'se encontra com as suas obrigações declarativas em <strong>DIA</strong>, tendo submetido todas as declarações fiscais exigíveis para o período em análise.',
+  cad: 'encontra-se devidamente <strong>CADASTRADO</strong> nos serviços da AGT, encontrando-se o seu registo actualizado nos termos da legislação vigente.',
+  div: 'apresenta dívidas fiscais exigíveis nos registos da AGT, conforme discriminado no mapa de dívidas em anexo.'
+};
+function emitirCertidao() {
+  const tipo = document.getElementById('cert-tipo').value;
+  const final = document.getElementById('cert-finalidade').value;
+  const ref = (tipo.toUpperCase())+'-2025-00' + (Math.floor(Math.random()*900)+100);
+  document.getElementById('cert-ref').textContent = ref;
+  document.getElementById('cert-finalidade-text').textContent = final;
+  document.getElementById('cert-texto').innerHTML = CERT_TEXTOS[tipo] || CERT_TEXTOS.cnd;
+  document.getElementById('cert-doc-area').classList.remove('hidden');
+  document.getElementById('cert-doc-area').scrollIntoView({behavior:'smooth'});
+}
+function novaCertidao() {
+  document.getElementById('cert-doc-area').classList.add('hidden');
+}
+
+// ── FACTURAÇÃO ──
+function switchFTab(t) {
+  document.getElementById('ftab-list').classList.toggle('active', t==='list');
+  document.getElementById('ftab-nova').classList.toggle('active', t==='nova');
+  document.getElementById('fat-list').classList.toggle('hidden', t!=='list');
+  document.getElementById('fat-nova').classList.toggle('hidden', t!=='nova');
+}
+function calcFatura() {
+  const q = parseFloat(document.getElementById('fat-qty').value)||0;
+  const p = parseFloat(document.getElementById('fat-preco').value)||0;
+  const base = q*p, iva = base*0.14, total = base+iva;
+  document.getElementById('fat-linha').textContent = Math.round(base).toLocaleString('pt-PT')+' Kz';
+  document.getElementById('fat-base').textContent = Math.round(base).toLocaleString('pt-PT')+' Kz';
+  document.getElementById('fat-iva').textContent = Math.round(iva).toLocaleString('pt-PT')+' Kz';
+  document.getElementById('fat-total').textContent = Math.round(total).toLocaleString('pt-PT')+' Kz';
+}
+function emitirFatura() {
+  document.getElementById('fat-form').classList.add('hidden');
+  document.getElementById('fat-success').classList.remove('hidden');
+}
+function resetFat() {
+  document.getElementById('fat-form').classList.remove('hidden');
+  document.getElementById('fat-success').classList.add('hidden');
+}
+
+// ── FORMADOR ──
+let _tipoContribuinte = 'colectiva';
+
+function setTipoContribuinte(tipo) {
+  _tipoContribuinte = tipo;
+  const isC = tipo === 'colectiva';
+  document.getElementById('campos-colectiva').classList.toggle('hidden', !isC);
+  document.getElementById('campos-singular').classList.toggle('hidden', isC);
+  const btnC = document.getElementById('tipo-btn-colectiva');
+  const btnS = document.getElementById('tipo-btn-singular');
+  btnC.style.background = isC ? 'var(--blue)' : '#fff';
+  btnC.style.color = isC ? '#fff' : 'var(--gray-600)';
+  btnC.style.borderColor = isC ? 'var(--blue)' : 'var(--gray-200)';
+  btnS.style.background = !isC ? 'var(--orange)' : '#fff';
+  btnS.style.color = !isC ? '#fff' : 'var(--gray-600)';
+  btnS.style.borderColor = !isC ? 'var(--orange)' : 'var(--gray-200)';
+}
+
+function cadastrarEmpresa() {
+  const alerta = document.getElementById('formador-alert');
+  const isC = _tipoContribuinte === 'colectiva';
+
+  const nome = isC
+    ? document.getElementById('f-nome').value.trim()
+    : document.getElementById('f-nome-s').value.trim();
+  const nif = isC
+    ? document.getElementById('f-nif').value.trim()
+    : document.getElementById('f-nif-s').value.trim();
+  const pass = isC
+    ? document.getElementById('f-pass').value.trim()
+    : document.getElementById('f-pass-s').value.trim();
+
+  if (!nome || !nif || !pass) {
+    alerta.innerHTML = '<div class="alert-box alert-err">⚠ Preencha pelo menos o nome, NIF e palavra-passe.</div>';
+    return;
+  }
+  if (isC && (nif.length !== 10 || !/^\d+$/.test(nif))) {
+    alerta.innerHTML = '<div class="alert-box alert-err">⚠ NIF colectivo deve ter 10 dígitos numéricos (começa por 5).</div>';
+    return;
+  }
+  if (!isC && !validarNIFSingular(nif)) {
+    alerta.innerHTML = '<div class="alert-box alert-err">⚠ NIF/BI inválido. Formato esperado: 9 dígitos + 2 letras + 3 dígitos (ex: 006238886HO043). Use o botão ⚡ Gerar.</div>';
+    return;
+  }
+  const empresas = getEmpresas();
+  if (empresas.find(e => e.nif === nif)) {
+    alerta.innerHTML = '<div class="alert-box alert-err">⚠ Já existe um contribuinte com esse NIF.</div>';
+    return;
+  }
+  const nova = {
+    tipo: isC ? 'colectiva' : 'singular',
+    nome: nome.toUpperCase(),
+    nif, pass,
+    cae: isC ? document.getElementById('f-cae').value : document.getElementById('f-profissao').value,
+    forma: isC ? document.getElementById('f-forma').value : (document.getElementById('f-estado-civil').value + ' · ' + document.getElementById('f-dependentes').value + ' dep.'),
+    grupo: isC ? document.getElementById('f-grupo').value : 'Pessoa Singular',
+    municipio: isC ? document.getElementById('f-municipio').value : document.getElementById('f-municipio-s').value,
+    divida: parseFloat(document.getElementById('f-divida').value)||0,
+    creditos: parseFloat(document.getElementById('f-creditos').value)||0
+  };
+  empresas.push(nova);
+  saveEmpresas(empresas);
+  const icone = isC ? '🏢' : '👤';
+  alerta.innerHTML = '<div class="alert-box alert-ok">' + icone + ' Contribuinte cadastrado! NIF: '+nif+' · Pass: '+pass+'</div>';
+  ['f-nome','f-nif','f-pass','f-nome-s','f-nif-s','f-pass-s'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('f-divida').value=0;
+  document.getElementById('f-creditos').value=0;
+  renderListaEmpresas();
+}
+
+function renderListaEmpresas() {
+  const empresas = getEmpresas();
+  const cont = document.getElementById('lista-empresas');
+  document.getElementById('count-empresas').textContent = empresas.length;
+  if (!empresas.length) {
+    cont.innerHTML = '<div style="padding:30px;text-align:center;color:var(--gray-400)">Nenhuma empresa cadastrada ainda.</div>';
+    return;
+  }
+  cont.innerHTML = empresas.map((e,i) => `
+    <div class="empresa-card">
+      <div class="empresa-card-info">
+        <h4>${e.tipo==='singular' ? '👤' : '🏢'} ${e.nome}</h4>
+        <p>NIF: <code style="font-family:var(--mono)">${e.nif}</code> · Pass: <code style="font-family:var(--mono)">${e.pass}</code> · ${e.grupo.split('—')[0].trim()}</p>
+        <p style="margin-top:2px;font-size:11px;color:var(--gray-400)">${e.cae} · ${e.municipio} · Dívida: ${Number(e.divida).toLocaleString('pt-PT')} Kz</p>
+      </div>
+      <div class="empresa-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="testarLogin(${i})">🔑 Testar Acesso</button>
+        <button class="btn btn-danger btn-sm" onclick="removerEmpresa(${i})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removerEmpresa(i) {
+  if (!confirm('Remover esta empresa?')) return;
+  const arr = getEmpresas();
+  arr.splice(i,1);
+  saveEmpresas(arr);
+  renderListaEmpresas();
+}
+
+function limparEmpresas() {
+  if (!confirm('Apagar TODAS as empresas cadastradas?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderListaEmpresas();
+}
+
+function testarLogin(i) {
+  const e = getEmpresas()[i];
+  if (!e) return;
+  currentEmpresa = e;
+  carregarPortal(e);
+}
+
+function exportarEmpresas() {
+  const arr = getEmpresas();
+  const rows = [['Denominação','NIF','Palavra-passe','CAE','Forma Jurídica','Grupo','Município','Dívida (Kz)','Créditos (Kz)']];
+  arr.forEach(e => rows.push([e.nome,e.nif,e.pass,e.cae,e.forma,e.grupo,e.municipio,e.divida,e.creditos]));
+  const csv = rows.map(r=>r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='empresas-simulacao-agt.csv'; a.click();
+}
+
+function alterarPin() {
+  const n = document.getElementById('pin-novo').value.trim();
+  const c = document.getElementById('pin-conf').value.trim();
+  const msg = document.getElementById('pin-msg');
+  if (n.length!==4||!/^\d+$/.test(n)) { msg.innerHTML='<div class="alert-box alert-err" style="margin-top:8px">O PIN deve ter 4 dígitos numéricos.</div>'; return; }
+  if (n!==c) { msg.innerHTML='<div class="alert-box alert-err" style="margin-top:8px">Os PINs não coincidem.</div>'; return; }
+  _pin = n;
+  msg.innerHTML='<div class="alert-box alert-ok" style="margin-top:8px">✅ PIN alterado com sucesso!</div>';
+  document.getElementById('pin-novo').value='';
+  document.getElementById('pin-conf').value='';
+  setTimeout(()=>msg.innerHTML='', 3000);
+}
+
+
+// ── NIF SINGULAR HELPERS ──
+const PROV_CODES = {
+    "Luanda":"LA","Bengo":"BE","Benguela":"BG","Bié":"BI",
+    "Cabinda":"CA","Cuando Cubango":"CC","Cuanza Norte":"CN",
+    "Cuanza Sul":"CS","Cunene":"CU","Huambo":"HO","Huíla":"HA",
+    "Lunda Norte":"LN","Lunda Sul":"LS","Malanje":"MA",
+    "Moxico":"MX","Namibe":"NM","Uíge":"UI","Zaire":"ZA"
+  };
+
+function getProvCodeFromMunicipio(val) {
+  if (!val) return 'LA';
+  const prov = val.split(' — ')[0].trim();
+  return PROV_CODES[prov] || 'LA';
+}
+
+function validarNIFSingular(nif) {
+  // Format: 9 digits + 2 uppercase letters + 3 digits = 14 chars
+  return /^\d{9}[A-Z]{2}\d{3}$/.test(nif);
+}
+
+function gerarNIFSingular() {
+  const sel = document.getElementById('f-municipio-s');
+  const code = sel ? getProvCodeFromMunicipio(sel.value) : 'LA';
+  const seq = String(Math.floor(Math.random()*999999999)).padStart(9,'0');
+  const rep = String(Math.floor(Math.random()*900)+100);
+  const nif = seq + code + rep;
+  document.getElementById('f-nif-s').value = nif;
+  document.getElementById('nif-s-hint').textContent = 'NIF gerado · Código provincial: ' + code;
+  document.getElementById('nif-s-hint').style.color = 'var(--green)';
+}
+
+function updateNIFPrefix() {
+  const sel = document.getElementById('f-municipio-s');
+  const code = sel ? getProvCodeFromMunicipio(sel.value) : '';
+  const hint = document.getElementById('nif-s-hint');
+  if (hint && code) {
+    hint.textContent = 'Código provincial seleccionado: ' + code + ' — Clique ⚡ Gerar para criar o NIF.';
+    hint.style.color = 'var(--blue)';
+  }
+}
+
+// ── INIT ──
+document.getElementById('login-nif').addEventListener('keydown', e=>{ if(e.key==='Enter') loginEstagiario(); });
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') loginEstagiario(); });
+document.getElementById('formador-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') loginFormador(); });
+calcIVA();
+</script>
+</body>
+</html>
